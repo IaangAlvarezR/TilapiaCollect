@@ -199,7 +199,14 @@ export function AdminBoard({ isAdmin }) {
                 ) : (
                   entries.map((entry) => {
                     const stats = [entry.stat0 ?? 0, entry.stat1 ?? 0, entry.stat2 ?? 0, entry.stat3 ?? 0, entry.stat4 ?? 0];
-                    const average = (stats.reduce((sum, value) => sum + value, 0) / stats.length).toFixed(1);
+                    const averageNum = stats.reduce((sum, value) => sum + value, 0) / stats.length;
+                    const average = averageNum.toFixed(1);
+                    let avgClass = '';
+                    if (averageNum >= 100) avgClass = 'cozy-100';
+                    else if (averageNum >= 90) avgClass = 'cozy-90';
+                    else if (averageNum >= 80) avgClass = 'cozy-80';
+                    else if (averageNum >= 70) avgClass = 'cozy-70';
+                    else avgClass = 'cozy-below';
 
                     return (
                       <tr key={entry.id} className="hover:bg-green-50/70">
@@ -208,35 +215,71 @@ export function AdminBoard({ isAdmin }) {
                             <span>{entry.uid}</span>
                             <button
                               type="button"
-                              onClick={() => navigator.clipboard.writeText(entry.uid)}
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(entry.uid);
+                                  const el = document.createElement('div');
+                                  el.textContent = 'UID copiado';
+                                  Object.assign(el.style, {
+                                    position: 'fixed',
+                                    bottom: '16px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    background: 'rgba(0,0,0,0.8)',
+                                    color: 'white',
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    zIndex: 9999,
+                                    fontSize: '12px'
+                                  });
+                                  document.body.appendChild(el);
+                                  setTimeout(() => el.remove(), 1800);
+                                } catch (err) {
+                                  console.warn('No se pudo copiar UID', err);
+                                }
+                              }}
                               className="rounded-lg bg-green-100 px-2 py-1 text-[10px] font-black text-green-800"
                               title="Copiar UID"
+                              aria-label="Copiar UID"
                             >
-                              Copiar
+                              📋
                             </button>
                           </div>
                         </td>
-                        {stats.map((value, index) => (
-                          <td key={`${entry.id}-${index}`} className="px-2 py-2 text-green-800">
-                            {value}
-                          </td>
-                        ))}
-                        <td className="px-2 py-2 font-black text-green-800">{average}</td>
+                        {stats.map((value, index) => {
+                          let statClass = '';
+                          if (value >= 100) statClass = 'cozy-100';
+                          else if (value >= 90) statClass = 'cozy-90';
+                          else if (value >= 80) statClass = 'cozy-80';
+                          else if (value >= 70) statClass = 'cozy-70';
+                          else statClass = 'cozy-below';
+
+                          return (
+                            <td key={`${entry.id}-${index}`} className={`px-2 py-2 ${statClass}`}>
+                              {value}
+                            </td>
+                          );
+                        })}
+                        <td className={`px-2 py-2 font-black ${avgClass}`}>{average}</td>
                         <td className="px-2 py-2">
                           <div className="flex gap-1">
                             <button
                               type="button"
                               onClick={() => handleEdit(entry)}
                               className="rounded-lg bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-700"
+                              title="Editar registro"
+                              aria-label="Editar registro"
                             >
-                              Editar
+                              ✏️
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(entry.id)}
                               className="rounded-lg bg-red-100 px-2 py-1 text-[10px] font-black text-red-700"
+                              title="Eliminar registro"
+                              aria-label="Eliminar registro"
                             >
-                              Borrar
+                              🗑️
                             </button>
                           </div>
                         </td>

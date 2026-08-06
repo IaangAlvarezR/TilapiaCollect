@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ALBUM_CONFIG, SET_NAMES, generateAlbumData } from './config/albumConfig';
 import { Card } from './components/Card';
 import { AuthModal } from './components/AuthModal';
@@ -58,6 +58,12 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState('');
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('album_dark_mode');
+    return saved === '1';
+  });
+  const headerRef = useRef(null);
+  const [headerOffset, setHeaderOffset] = useState(0);
 
   // Filters
   const [frameFilter, setFrameFilter] = useState('all'); // 'all', 'basic', 'gold'
@@ -119,6 +125,31 @@ export default function App() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (darkMode) document.documentElement.classList.add('tt-dark');
+      else document.documentElement.classList.remove('tt-dark');
+      localStorage.setItem('album_dark_mode', darkMode ? '1' : '0');
+    } catch (err) {
+      console.warn('No se pudo aplicar modo oscuro', err);
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+    const updateHeader = () => {
+      try {
+        const h = headerRef.current ? headerRef.current.offsetHeight : 72;
+        setHeaderOffset(h);
+      } catch (e) {
+        setHeaderOffset(72);
+      }
+    };
+
+    updateHeader();
+    window.addEventListener('resize', updateHeader);
+    return () => window.removeEventListener('resize', updateHeader);
   }, []);
 
   useEffect(() => {
@@ -234,7 +265,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-green-50 text-green-900 flex flex-col font-sans max-w-xl mx-auto border-x border-green-200 shadow-2xl">
       
-      <header className="p-4 pt-6 bg-green-100 border-b border-green-200 sticky top-0 z-30">
+      <header ref={headerRef} className="p-4 pt-6 bg-green-100 border-b border-green-200 sticky top-0 z-30">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-xl font-black text-green-800">
             {ALBUM_CONFIG.title}
@@ -251,6 +282,13 @@ export default function App() {
               }`}
             >
               Generar Texto Resumen
+            </button>
+            <button
+              onClick={() => setDarkMode((v) => !v)}
+              className="text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-md bg-white text-green-700 border border-green-300 hover:bg-green-50"
+              title="Toggle dark mode"
+            >
+              {darkMode ? '🌙 Dark' : '🌞 Light'}
             </button>
 
             <button
@@ -289,11 +327,11 @@ export default function App() {
       <AdminBoard isAdmin={isGeneralMode} />
 
       {/* FILTROS */}
-      <section className="px-4 py-3 bg-white border-b border-green-200 sticky top-[72px] z-20 shadow-sm">
+      <section style={{ top: `${headerOffset}px` }} className="px-4 py-3 bg-white border-b border-green-200 sticky z-20 shadow-sm">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-green-700 uppercase w-14">Rareza:</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {['all', 'basic', 'gold'].map((f) => (
                 <button
                   key={f}
@@ -316,7 +354,7 @@ export default function App() {
           {frameFilter !== 'gold' && (
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-green-700 uppercase w-14">Estrellas:</span>
-              <div className="flex gap-1 overflow-x-auto no-scrollbar">
+              <div className="flex flex-wrap gap-1">
                 {['all', 1, 2, 3, 4, 5].map((s) => (
                   <button
                     key={s}
@@ -339,15 +377,13 @@ export default function App() {
       {/* RENDERIZADO DE CARTAS EN BLOQUES DE SETS */}
       <main className="flex-1 p-4 bg-green-50/50">
         {generalConfig.map((set, index) => {
-          const filteredCards = set.cards.filter((card) => {
+          const setBackgroundClass = SET_BACKGROUND_CLASSES[index % SET_BACKGROUND_CLASSES.length];
+
+          const matchesFilter = (card) => {
             if (frameFilter !== 'all' && card.defaultFrame !== frameFilter) return false;
             if (starFilter !== 'all' && card.stars !== starFilter) return false;
             return true;
-          });
-
-          if (filteredCards.length === 0) return null;
-
-          const setBackgroundClass = SET_BACKGROUND_CLASSES[index % SET_BACKGROUND_CLASSES.length];
+          };
 
           return (
             <div key={set.pageNumber} className={`mb-8 rounded-2xl border border-white/70 p-3 shadow-sm ${setBackgroundClass}`}>
@@ -355,13 +391,14 @@ export default function App() {
                 <span>{`Set de ${set.setName}`}</span>
               </h2>
               <div className="grid grid-cols-3 gap-3">
-                {filteredCards.map((card) => (
+                {set.cards.map((card) => (
                   <Card
                     key={card.id}
                     cardData={card}
                     userProgress={currentUserProgress}
                     allProgress={allProgress}
                     users={users}
+                    matchesFilter={matchesFilter(card)}
                     onToggleCard={handleToggleCard}
                     isGeneralMode={isGeneralMode}
                     onUpdateCardConfig={handleUpdateCardConfig}

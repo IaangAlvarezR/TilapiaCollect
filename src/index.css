@@ -1,1 +1,116 @@
 @import "tailwindcss";
+
+/* Minimal dark-mode overrides (class-based: .tt-dark on <html>) */
+.tt-dark .min-h-screen { background: #0b1220 !important; color: #e6eef6 !important; }
+.tt-dark header, .tt-dark .px-4.py-2, .tt-dark .bg-green-100 { background: #071024 !important; }
+.tt-dark .bg-white { background: #0f1724 !important; color: #e6eef6 !important; }
+.tt-dark .bg-green-50 { background: #071024 !important; }
+.tt-dark .text-green-900, .tt-dark .text-green-800, .tt-dark .text-green-700 { color: #cfe3ff !important; }
+.tt-dark .border-green-200, .tt-dark .border-green-100 { border-color: rgba(200,210,220,0.06) !important; }
+.tt-dark .bg-emerald-100 { background: rgba(255,255,255,0.03) !important; }
+.tt-dark .rounded-2xl, .tt-dark .rounded-xl { background-clip: padding-box; }
+
+/* Ensure scrollable lists are readable */
+.tt-dark .no-scrollbar { scrollbar-color: rgba(255,255,255,0.2) transparent; }
+
+/* Toast style fallback (if JS-toasts are added) */
+.tt-dark .toast-tt { background: rgba(255,255,255,0.06); color: #e6eef6; }
+
+/* Additional element adjustments for dark theme */
+.tt-dark .bg-emerald-600 { background: #065f46 !important; color: #e6f9ef !important; }
+.tt-dark .bg-blue-500 { background: #0369a1 !important; color: #e6f6ff !important; }
+.tt-dark .bg-yellow-400 { background: #b45309 !important; color: #fff7ed !important; }
+.tt-dark .bg-amber-100 { background: rgba(255,255,255,0.02) !important; }
+.tt-dark .bg-sky-100 { background: rgba(255,255,255,0.02) !important; }
+.tt-dark .text-blue-800, .tt-dark .text-yellow-800, .tt-dark .text-amber-700 { color: #e6eef6 !important; }
+.tt-dark .bg-green-100 { background: rgba(255,255,255,0.02) !important; }
+.tt-dark .shadow-sm, .tt-dark .shadow-md, .tt-dark .shadow-2xl { box-shadow: none !important; }
+.tt-dark .border-white\/70 { border-color: rgba(255,255,255,0.04) !important; }
+
+/* Ensure table rows readable */
+.tt-dark table { color: #e6eef6; }
+.tt-dark th, .tt-dark td { border-color: rgba(255,255,255,0.04) !important; }
+
+/* Buttons with colored backgrounds need adjusted text for contrast */
+.tt-dark .text-green-700 { color: #d1f0d8 !important; }
+.tt-dark .bg-amber-100 { background: rgba(255,255,255,0.02) !important; }
+
+/* Header & global container fixes for dark mode */
+.tt-dark header,
+.tt-dark header .flex.items-center,
+.tt-dark header .p-4 {
+	background: linear-gradient(180deg, rgba(6,10,18,0.95), rgba(8,14,24,0.95)) !important;
+	border-bottom-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Make set containers darker but keep separation */
+.tt-dark .rounded-2xl.border-white\/70,
+.tt-dark .rounded-2xl.border {
+	background: #071426 !important;
+	border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Cards */
+.tt-dark .flex.flex-col.items-center.bg-white {
+	background: #0b1726 !important;
+	color: #dbeafe !important;
+	border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Missing/dashed card outline */
+.tt-dark .border-dashed {
+	border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Card inner number & labels */
+.tt-dark .text-green-600, .tt-dark .text-green-700, .tt-dark .text-green-800, .tt-dark .text-green-900 {
+	color: #cfe3ff !important;
+}
+
+/* Set background distinct colors - softer tints */
+.tt-dark .bg-sky-100 \
+	, .tt-dark .bg-amber-100 \
+	, .tt-dark .bg-violet-100 \
+	, .tt-dark .bg-emerald-100 \
+	, .tt-dark .bg-rose-100 \
+	, .tt-dark .bg-orange-100 {
+	background: rgba(255,255,255,0.02) !important;
+}
+
+/* Stars & badges contrast */
+.tt-dark .text-yellow-500, .tt-dark .text-blue-800, .tt-dark .text-yellow-800 {
+	color: #ffd86b !important;
+}
+
+/* Buttons: make bordered buttons stand out */
+.tt-dark .bg-white { background: #071426 !important; color: #e6eef6 !important; }
+.tt-dark .bg-green-50 { background: #071426 !important; }
+.tt-dark .rounded-full.bg-emerald-600 { background: #065f46 !important; }
+
+/* Table rows */
+.tt-dark .hover\:bg-green-50\/70:hover { background: rgba(255,255,255,0.02) !important; }
+
+/* Reduce intense shadows in dark */
+.tt-dark .shadow-sm, .tt-dark .shadow-md, .tt-dark .shadow-2xl { box-shadow: none !important; }
+
+/* Ensure header has solid background in dark mode (higher specificity) */
+.tt-dark header,
+.tt-dark header.p-4,
+.tt-dark header[class*="bg-"] {
+	background-color: #071827 !important;
+	background-image: none !important;
+	border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* Cozy Farm score color classes */
+.cozy-100 { color: #2563eb; /* blue-600 */ }
+.cozy-90 { color: #059669; /* green-600 */ }
+.cozy-80 { color: #d97706; /* amber-600/yellowish */ }
+.cozy-70 { color: #d97706; /* amber-600 */ }
+.cozy-below { color: #dc2626; /* red-600 */ }
+
+.tt-dark .cozy-100 { color: #93c5fd !important; }
+.tt-dark .cozy-90 { color: #4ade80 !important; }
+.tt-dark .cozy-80 { color: #fbbf24 !important; }
+.tt-dark .cozy-70 { color: #f59e0b !important; }
+.tt-dark .cozy-below { color: #f87171 !important; }

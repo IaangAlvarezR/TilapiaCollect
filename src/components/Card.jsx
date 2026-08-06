@@ -6,6 +6,7 @@ export function Card({
   onToggleCard,
   isGeneralMode,
   onUpdateCardConfig,
+  matchesFilter = true,
 }) {
   const rawProgress = userProgress[cardData.id];
   const isGold = cardData.defaultFrame === 'gold';
@@ -35,7 +36,7 @@ export function Card({
     });
 
   return (
-    <div className="flex flex-col items-center bg-white p-2 rounded-2xl border border-green-200 shadow-sm">
+    <div className={`flex flex-col items-center bg-white p-2 rounded-2xl border border-green-200 shadow-sm ${matchesFilter ? '' : 'opacity-30 pointer-events-none'}`}>
       <div 
         className={`w-full aspect-[3/4] rounded-xl flex flex-col justify-between p-2 transition-all duration-300 text-center select-none relative overflow-hidden ${
           hasCard
@@ -53,15 +54,15 @@ export function Card({
             }`}>
               #{String(globalCardNumber).padStart(3, '0')}
             </span>
-            <div className={`text-[10px] tracking-wider rounded-md px-1 py-0.5 ${
+            <div className={`text-[10px] tracking-wider rounded-md px-1 py-0.5 truncate max-w-[4rem] text-left ${
               hasCard ? 'text-yellow-500 bg-white/70 drop-shadow-sm' : 'text-gray-400 bg-green-100/70'
             }`}>
-              {renderStars(cardData.stars)}
+              <span className="inline-block align-middle truncate">{renderStars(cardData.stars)}</span>
             </div>
           </div>
           
           <div className="flex-1 flex items-center justify-center">
-            <h3 className={`text-base font-black uppercase tracking-wider drop-shadow-sm break-words w-full px-1 ${
+            <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider drop-shadow-sm break-words w-full px-1 truncate ${
               hasCard ? (isGold ? 'text-yellow-800' : 'text-blue-800') : 'text-green-600'
             }`}>
               {displayName}
@@ -82,19 +83,25 @@ export function Card({
             className="w-full rounded border border-green-200 bg-green-50 px-2 py-2 text-[10px] font-bold text-center text-green-900 outline-none focus:border-green-400"
             placeholder="Nombre"
           />
-          <div className="mt-3 flex flex-col gap-2">
-            <div className="flex justify-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => onUpdateCardConfig(cardData.id, 'stars', star)}
-                  className={`rounded-lg px-2 py-1 text-sm ${star <= cardData.stars ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-400'}`}
-                  title={`Estrellas: ${star}`}
-                >
-                  ★
-                </button>
-              ))}
+            <div className="mt-3 flex flex-col gap-2">
+            <div className="flex justify-center items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onUpdateCardConfig(cardData.id, 'stars', Math.max(1, (cardData.stars || 1) - 1))}
+                className="rounded-lg px-2 py-1 text-sm bg-slate-100 text-slate-600"
+                title="Disminuir estrellas"
+              >
+                -
+              </button>
+              <div className="text-sm font-black text-yellow-700">{(cardData.stars || 1)} ★</div>
+              <button
+                type="button"
+                onClick={() => onUpdateCardConfig(cardData.id, 'stars', Math.min(5, (cardData.stars || 1) + 1))}
+                className="rounded-lg px-2 py-1 text-sm bg-slate-100 text-slate-600"
+                title="Aumentar estrellas"
+              >
+                +
+              </button>
             </div>
             <div className="flex w-full gap-2">
               <button
@@ -154,14 +161,36 @@ export function Card({
               <li key={u.uid} className="flex justify-between items-center bg-white rounded p-1 border border-green-100 shadow-sm">
                 <span className="text-[10px] text-green-900 font-bold truncate pr-1">{u.name}</span>
                 <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[9px] text-green-600">{u.uid}</span>
                   <button
-                    onClick={() => navigator.clipboard.writeText(u.uid)}
-                    className="text-green-500 hover:text-green-800 bg-green-50 hover:bg-green-200 rounded px-1"
-                    title="Copiar UID"
-                  >
-                    📋
-                  </button>
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(u.uid);
+                        const el = document.createElement('div');
+                        el.textContent = 'UID copiado';
+                        Object.assign(el.style, {
+                          position: 'fixed',
+                          bottom: '16px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: 'rgba(0,0,0,0.8)',
+                          color: 'white',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          zIndex: 9999,
+                          fontSize: '12px'
+                        });
+                        document.body.appendChild(el);
+                        setTimeout(() => el.remove(), 1800);
+                      } catch (err) {
+                        console.warn('No se pudo copiar UID', err);
+                      }
+                    }}
+                    className="text-green-500 hover:text-green-800 bg-green-50 hover:bg-green-200 rounded px-2 py-1 text-[11px] font-black"
+                      title="Copiar UID"
+                      aria-label="Copiar UID"
+                    >
+                      📋
+                    </button>
                 </div>
               </li>
             ))}

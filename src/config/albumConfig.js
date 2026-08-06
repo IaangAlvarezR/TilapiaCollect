@@ -5,7 +5,7 @@ export const ALBUM_CONFIG = {
 };
 
 export const SET_NAMES = [
-  "Caparacin", "Mecerino", "Barrigodo", "Chsparin", "Aletin", 
+  "Caparacin", "Mecerino", "Barrigodo", "Chisparin", "Aletin", 
   "Chisplet", "Llamallama", "Gigi", "Azugeco", "Rocuga", 
   "Camarion", "Toperin", "Brotibu", "Cangris", "Fungin"
 ];
@@ -31,4 +31,4 @@ export const generateAlbumData = () => {
   }
 
   return pages;
-};
+};
