@@ -16,28 +16,10 @@ const toProgressRow = (userId, cardId, count) => ({
   count,
 })
 
-const getFileExtension = (file) => {
-  const extension = file.name.split('.').pop()
-  return extension || file.type.split('/').pop() || 'jpg'
-}
-
-export async function uploadAlbumImage(file, folder) {
-  const path = `${folder}/${crypto.randomUUID()}.${getFileExtension(file)}`
-  const { error: uploadError } = await supabase.storage
-    .from('card-images')
-    .upload(path, file)
-
-  if (uploadError) throw uploadError
-
-  const { data } = supabase.storage.from('card-images').getPublicUrl(path)
-
-  return data.publicUrl
-}
-
 export async function loadGeneralCards() {
   const { data, error } = await supabase
     .from('general_cards')
-    .select('id,page,slot,name,stars,default_frame,image_url')
+    .select('id,page,slot,name,stars,default_frame')
     .order('page', { ascending: true })
     .order('slot', { ascending: true })
 
@@ -48,26 +30,6 @@ export async function loadGeneralCards() {
 
 export async function saveGeneralCard(card) {
   const { error } = await supabase.from('general_cards').upsert(toCardRow(card))
-
-  if (error) throw error
-}
-
-export async function loadPageImages() {
-  const { data, error } = await supabase
-    .from('page_images')
-    .select('page,image_url')
-    .order('page', { ascending: true })
-
-  if (error) throw error
-
-  return Object.fromEntries((data || []).map((row) => [row.page, row.image_url]))
-}
-
-export async function savePageImage(page, imageUrl) {
-  const { error } = await supabase.from('page_images').upsert({
-    page,
-    image_url: imageUrl,
-  })
 
   if (error) throw error
 }
@@ -93,3 +55,90 @@ export async function saveCardProgress(userId, cardId, count) {
 
   if (error) throw error
 }
+
+// Usuarios
+export async function loadUsers() {
+  const { data, error } = await supabase
+    .from('users')
+    .select('uid,name,pin,is_admin')
+
+  if (error) throw error
+
+  return data || []
+}
+
+export async function loginUser(identifier, pin) {
+  const normalizedIdentifier = String(identifier || '').trim();
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .or(`uid.eq.${normalizedIdentifier},name.eq.${normalizedIdentifier}`)
+    .eq('pin', pin)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null
+    }
+    throw error
+  }
+
+  return data
+}
+
+export async function registerUser(uid, name, pin) {
+  const { data, error } = await supabase
+    .from('users')
+    .insert({ uid, name, pin, is_admin: false })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return data
+}
+
+export async function loadAdminBoardEntries() {
+  const { data, error } = await supabase
+    .from('admin_board_entries')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return data || []
+}
+
+export async function saveAdminBoardEntry(entry) {
+  const payload = {
+    id: entry.id || undefined,
+    uid: entry.uid,
+    stat0: entry.stat0 ?? 0,
+    stat1: entry.stat1 ?? 0,
+    stat2: entry.stat2 ?? 0,
+    stat3: entry.stat3 ?? 0,
+    stat4: entry.stat4 ?? 0,
+  }
+
+  const { data, error } = await supabase
+    .from('admin_board_entries')
+    .upsert(payload, { onConflict: 'uid' })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return data
+}
+
+export async function deleteAdminBoardEntry(id) {
+  const { error } = await supabase
+    .from('admin_board_entries')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+

@@ -1,15 +1,12 @@
-import { useRef } from 'react';
-
 export function Card({
   cardData,
   userProgress,
+  allProgress,
+  users,
   onToggleCard,
   isGeneralMode,
   onUpdateCardConfig,
-  onUploadCardImage,
 }) {
-  const fileInputRef = useRef(null);
-
   const rawProgress = userProgress[cardData.id];
   const isGold = cardData.defaultFrame === 'gold';
   const progressType = isGold ? 'goldCount' : 'basicCount';
@@ -21,141 +18,156 @@ export function Card({
   // 🔢 Cálculo del número global de carta (1 al 135)
   const globalCardNumber = (cardData.page - 1) * 9 + cardData.slot;
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      onUploadCardImage(cardData.id, file);
-    }
-  };
+  const hasCard = count > 0;
+  const fallbackLabel = String(globalCardNumber);
+  const displayName = cardData.name && !/^Foto\s+\d+$/.test(cardData.name) ? cardData.name : fallbackLabel;
 
-  // 1. MODO CONFIGURACIÓN GENERAL
-  if (isGeneralMode) {
-    return (
-      <div className="flex flex-col items-center bg-gray-900 p-2 rounded-2xl border-2 border-indigo-500/40 shadow-md">
-        <span className="text-[10px] font-mono font-bold text-indigo-400 mb-1">
-          EDITAR #{String(globalCardNumber).padStart(3, '0')}
-        </span>
+  // Encontrar quién tiene esta carta
+  const usersWithCard = Object.entries(allProgress || {})
+    .filter(([uid, progress]) => {
+      const raw = progress[cardData.id];
+      const c = typeof raw === 'number' ? raw : (raw?.count || raw?.[progressType] || 0);
+      return c > 0;
+    })
+    .map(([uid]) => {
+      const userObj = users?.find(u => u.uid === uid);
+      return userObj ? { name: userObj.name, uid } : { name: 'Desconocido', uid };
+    });
 
-        <div className="w-full aspect-[3/4] rounded-xl border border-gray-700 bg-gray-800 flex flex-col justify-between p-2 text-center relative overflow-hidden">
-          {cardData.imageUrl ? (
-            <img 
-              src={cardData.imageUrl} 
-              alt={cardData.name} 
-              className="absolute inset-0 w-full h-full object-cover rounded-xl opacity-80"
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-1">
-              <span className="text-xl">📷</span>
-              <span className="text-[9px]">Sin foto</span>
+  return (
+    <div className="flex flex-col items-center bg-white p-2 rounded-2xl border border-green-200 shadow-sm">
+      <div 
+        className={`w-full aspect-[3/4] rounded-xl flex flex-col justify-between p-2 transition-all duration-300 text-center select-none relative overflow-hidden ${
+          hasCard
+            ? isGold
+              ? 'border-4 border-yellow-400 bg-yellow-100 shadow-[0_0_15px_rgba(250,204,21,0.3)]'
+              : 'border-4 border-blue-400 bg-blue-50 shadow-md'
+            : 'border-2 border-dashed border-green-300 bg-green-50/50 opacity-60'
+        }`}
+      >
+        <div className="relative z-10 flex flex-col justify-between h-full p-1 rounded-lg">
+          {/* Número global de 1 a 135 */}
+          <div className="flex justify-between items-start w-full">
+            <span className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded border ${
+              hasCard ? 'text-gray-800 bg-white/70 border-gray-300/50' : 'text-green-700 bg-green-100/70 border-green-200'
+            }`}>
+              #{String(globalCardNumber).padStart(3, '0')}
+            </span>
+            <div className={`text-[10px] tracking-wider rounded-md px-1 py-0.5 ${
+              hasCard ? 'text-yellow-500 bg-white/70 drop-shadow-sm' : 'text-gray-400 bg-green-100/70'
+            }`}>
+              {renderStars(cardData.stars)}
             </div>
-          )}
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center">
+            <h3 className={`text-base font-black uppercase tracking-wider drop-shadow-sm break-words w-full px-1 ${
+              hasCard ? (isGold ? 'text-yellow-800' : 'text-blue-800') : 'text-green-600'
+            }`}>
+              {displayName}
+            </h3>
+          </div>
+        </div>
+      </div>
 
-          <div className="relative z-10 flex flex-col justify-between h-full bg-gray-950/75 p-1.5 rounded-lg backdrop-blur-[2px]">
-            <input 
-              type="text" 
-              value={cardData.name} 
-              onChange={(e) => onUpdateCardConfig(cardData.id, 'name', e.target.value)}
-              className="bg-gray-900/90 text-white text-[10px] font-bold text-center rounded border border-gray-700 px-1 py-0.5"
-            />
-
-            <div className="flex justify-center gap-0.5">
+      {isGeneralMode && (
+        <div className="mt-3 w-full rounded-2xl border border-green-200 bg-white/95 p-3 shadow-sm">
+          <div className="mb-2 text-[10px] font-black uppercase tracking-wide text-green-700">
+            Editar carta
+          </div>
+          <input
+            type="text"
+            value={cardData.name}
+            onChange={(e) => onUpdateCardConfig(cardData.id, 'name', e.target.value)}
+            className="w-full rounded border border-green-200 bg-green-50 px-2 py-2 text-[10px] font-bold text-center text-green-900 outline-none focus:border-green-400"
+            placeholder="Nombre"
+          />
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="flex justify-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
+                  type="button"
                   onClick={() => onUpdateCardConfig(cardData.id, 'stars', star)}
-                  className={`text-xs ${star <= cardData.stars ? 'text-yellow-400' : 'text-gray-600'}`}
+                  className={`rounded-lg px-2 py-1 text-sm ${star <= cardData.stars ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-400'}`}
+                  title={`Estrellas: ${star}`}
                 >
                   ★
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={() => fileInputRef.current.click()}
-              className="bg-indigo-600/90 text-white text-[9px] py-1 rounded font-bold hover:bg-indigo-500 transition-all"
-            >
-              📷 Subir Foto
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImageUpload} 
-              accept="image/*" 
-              className="hidden" 
-            />
-
-            <button
-              onClick={() => onUpdateCardConfig(cardData.id, 'defaultFrame', isGold ? 'basic' : 'gold')}
-              className={`py-0.5 text-[8px] font-black rounded uppercase ${
-                isGold ? 'bg-yellow-500 text-black' : 'bg-blue-600 text-white'
-              }`}
-            >
-              {isGold ? 'Dorado' : 'Azul'}
-            </button>
+            <div className="flex w-full gap-2">
+              <button
+                type="button"
+                onClick={() => onUpdateCardConfig(cardData.id, 'defaultFrame', 'basic')}
+                className={`flex-1 rounded-xl px-2 py-2 text-[10px] font-black uppercase ${
+                  isGold ? 'text-blue-700 bg-blue-100' : 'text-blue-700 bg-blue-200/70'
+                }`}
+              >
+                Azul
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateCardConfig(cardData.id, 'defaultFrame', 'gold')}
+                className={`flex-1 rounded-xl px-2 py-2 text-[10px] font-black uppercase ${
+                  isGold ? 'text-yellow-900 bg-yellow-300' : 'text-yellow-700 bg-yellow-100'
+                }`}
+              >
+                Oro
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  // 2. MODO JUGADOR INDIVIDUAL
-  const hasCard = count > 0;
-
-  return (
-    <div className="flex flex-col items-center bg-gray-900 p-2 rounded-2xl border border-gray-800 shadow-inner">
-      <div 
-        className={`w-full aspect-[3/4] rounded-xl flex flex-col justify-between p-2 transition-all duration-300 text-center select-none relative overflow-hidden ${
-          hasCard
-            ? isGold
-              ? 'border-4 border-yellow-400 bg-yellow-950/40 shadow-[0_0_15px_rgba(250,204,21,0.3)]'
-              : 'border-4 border-blue-500 bg-blue-950/40 shadow-md'
-            : 'border-2 border-dashed border-gray-700 bg-gray-800/30 opacity-40'
-        }`}
-      >
-        {cardData.imageUrl && (
-          <img 
-            src={cardData.imageUrl} 
-            alt={cardData.name} 
-            className={`absolute inset-0 w-full h-full object-cover ${hasCard ? 'opacity-100' : 'opacity-20 grayscale'}`}
-          />
-        )}
-
-        <div className="relative z-10 flex flex-col justify-between h-full bg-gradient-to-b from-gray-950/80 via-transparent to-gray-950/90 p-1 rounded-lg">
-          {/* Número global de 1 a 135 */}
-          <span className="text-[10px] font-mono font-extrabold text-gray-200 self-start bg-gray-950/70 px-1.5 py-0.5 rounded border border-gray-700/50">
-            #{String(globalCardNumber).padStart(3, '0')}
-          </span>
-          
-          <div className="text-yellow-400 text-[10px] tracking-wider drop-shadow bg-gray-950/70 rounded-md px-1 py-0.5">
-            {renderStars(cardData.stars)}
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Botones de incremento y decremento (+ / -) */}
-      <div className="flex items-center justify-between w-full mt-2 bg-gray-800 rounded-xl p-1 border border-gray-700">
+      <div className="flex items-center justify-between w-full mt-2 bg-green-50 rounded-xl p-1 border border-green-200">
         <button
           onClick={() => onToggleCard(cardData.id, progressType, 'sub')}
-          className="w-7 h-7 flex items-center justify-center bg-gray-700 text-gray-300 rounded-lg text-sm font-black active:scale-90 transition-all hover:bg-gray-600"
+          className="w-7 h-7 flex items-center justify-center bg-white text-green-600 border border-green-200 rounded-lg text-sm font-black active:scale-90 transition-all hover:bg-green-100 hover:text-green-800"
         >
           -
         </button>
         
-        <span className={`text-xs font-black ${isGold ? 'text-yellow-400' : 'text-blue-400'}`}>
+        <span className={`text-xs font-black ${hasCard ? (isGold ? 'text-yellow-600' : 'text-blue-600') : 'text-green-800'}`}>
           {count}
         </span>
 
         <button
           onClick={() => onToggleCard(cardData.id, progressType, 'add')}
-          className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm font-black active:scale-90 transition-all ${
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm font-black active:scale-90 transition-all shadow-sm ${
             isGold 
-              ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
-              : 'bg-blue-600 text-white hover:bg-blue-500'
+              ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-300' 
+              : 'bg-blue-500 text-white hover:bg-blue-400'
           }`}
         >
           +
         </button>
       </div>
+
+      {/* Lista de usuarios */}
+      {usersWithCard.length > 0 && (
+        <div className="w-full mt-2 bg-green-50 rounded-lg p-1.5 border border-green-200 text-left max-h-24 overflow-y-auto no-scrollbar">
+          <p className="text-[9px] font-bold text-green-700 mb-1">Tienen esta carta:</p>
+          <ul className="space-y-1">
+            {usersWithCard.map((u) => (
+              <li key={u.uid} className="flex justify-between items-center bg-white rounded p-1 border border-green-100 shadow-sm">
+                <span className="text-[10px] text-green-900 font-bold truncate pr-1">{u.name}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[9px] text-green-600">{u.uid}</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(u.uid)}
+                    className="text-green-500 hover:text-green-800 bg-green-50 hover:bg-green-200 rounded px-1"
+                    title="Copiar UID"
+                  >
+                    📋
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
