@@ -1,116 +1,259 @@
 @import "tailwindcss";
 
-/* Minimal dark-mode overrides (class-based: .tt-dark on <html>) */
-.tt-dark .min-h-screen { background: #0b1220 !important; color: #e6eef6 !important; }
-.tt-dark header, .tt-dark .px-4.py-2, .tt-dark .bg-green-100 { background: #071024 !important; }
-.tt-dark .bg-white { background: #0f1724 !important; color: #e6eef6 !important; }
-.tt-dark .bg-green-50 { background: #071024 !important; }
-.tt-dark .text-green-900, .tt-dark .text-green-800, .tt-dark .text-green-700 { color: #cfe3ff !important; }
-.tt-dark .border-green-200, .tt-dark .border-green-100 { border-color: rgba(200,210,220,0.06) !important; }
-.tt-dark .bg-emerald-100 { background: rgba(255,255,255,0.03) !important; }
-.tt-dark .rounded-2xl, .tt-dark .rounded-xl { background-clip: padding-box; }
-
-/* Ensure scrollable lists are readable */
-.tt-dark .no-scrollbar { scrollbar-color: rgba(255,255,255,0.2) transparent; }
-
-/* Toast style fallback (if JS-toasts are added) */
-.tt-dark .toast-tt { background: rgba(255,255,255,0.06); color: #e6eef6; }
-
-/* Additional element adjustments for dark theme */
-.tt-dark .bg-emerald-600 { background: #065f46 !important; color: #e6f9ef !important; }
-.tt-dark .bg-blue-500 { background: #0369a1 !important; color: #e6f6ff !important; }
-.tt-dark .bg-yellow-400 { background: #b45309 !important; color: #fff7ed !important; }
-.tt-dark .bg-amber-100 { background: rgba(255,255,255,0.02) !important; }
-.tt-dark .bg-sky-100 { background: rgba(255,255,255,0.02) !important; }
-.tt-dark .text-blue-800, .tt-dark .text-yellow-800, .tt-dark .text-amber-700 { color: #e6eef6 !important; }
-.tt-dark .bg-green-100 { background: rgba(255,255,255,0.02) !important; }
-.tt-dark .shadow-sm, .tt-dark .shadow-md, .tt-dark .shadow-2xl { box-shadow: none !important; }
-.tt-dark .border-white\/70 { border-color: rgba(255,255,255,0.04) !important; }
-
-/* Ensure table rows readable */
-.tt-dark table { color: #e6eef6; }
-.tt-dark th, .tt-dark td { border-color: rgba(255,255,255,0.04) !important; }
-
-/* Buttons with colored backgrounds need adjusted text for contrast */
-.tt-dark .text-green-700 { color: #d1f0d8 !important; }
-.tt-dark .bg-amber-100 { background: rgba(255,255,255,0.02) !important; }
-
-/* Header & global container fixes for dark mode */
-.tt-dark header,
-.tt-dark header .flex.items-center,
-.tt-dark header .p-4 {
-	background: linear-gradient(180deg, rgba(6,10,18,0.95), rgba(8,14,24,0.95)) !important;
-	border-bottom-color: rgba(255,255,255,0.04) !important;
+/* Dark mode overrides. The app toggles .tt-dark on <html>. */
+.tt-dark .min-h-screen {
+  background: #07111f !important;
+  color: #edf4ff !important;
 }
 
-/* Make set containers darker but keep separation */
-.tt-dark .rounded-2xl.border-white\/70,
-.tt-dark .rounded-2xl.border {
-	background: #071426 !important;
-	border-color: rgba(255,255,255,0.04) !important;
-}
-
-/* Cards */
-.tt-dark .flex.flex-col.items-center.bg-white {
-	background: #0b1726 !important;
-	color: #dbeafe !important;
-	border-color: rgba(255,255,255,0.04) !important;
-}
-
-/* Missing/dashed card outline */
-.tt-dark .border-dashed {
-	border-color: rgba(255,255,255,0.06) !important;
-}
-
-/* Card inner number & labels */
-.tt-dark .text-green-600, .tt-dark .text-green-700, .tt-dark .text-green-800, .tt-dark .text-green-900 {
-	color: #cfe3ff !important;
-}
-
-/* Set background distinct colors - softer tints */
-.tt-dark .bg-sky-100 \
-	, .tt-dark .bg-amber-100 \
-	, .tt-dark .bg-violet-100 \
-	, .tt-dark .bg-emerald-100 \
-	, .tt-dark .bg-rose-100 \
-	, .tt-dark .bg-orange-100 {
-	background: rgba(255,255,255,0.02) !important;
-}
-
-/* Stars & badges contrast */
-.tt-dark .text-yellow-500, .tt-dark .text-blue-800, .tt-dark .text-yellow-800 {
-	color: #ffd86b !important;
-}
-
-/* Buttons: make bordered buttons stand out */
-.tt-dark .bg-white { background: #071426 !important; color: #e6eef6 !important; }
-.tt-dark .bg-green-50 { background: #071426 !important; }
-.tt-dark .rounded-full.bg-emerald-600 { background: #065f46 !important; }
-
-/* Table rows */
-.tt-dark .hover\:bg-green-50\/70:hover { background: rgba(255,255,255,0.02) !important; }
-
-/* Reduce intense shadows in dark */
-.tt-dark .shadow-sm, .tt-dark .shadow-md, .tt-dark .shadow-2xl { box-shadow: none !important; }
-
-/* Ensure header has solid background in dark mode (higher specificity) */
 .tt-dark header,
 .tt-dark header.p-4,
 .tt-dark header[class*="bg-"] {
-	background-color: #071827 !important;
-	background-image: none !important;
-	border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  background: #0b1628 !important;
+  border-bottom-color: #23324a !important;
+}
+
+.tt-dark section,
+.tt-dark main,
+.tt-dark .bg-white,
+.tt-dark .bg-white\/70,
+.tt-dark .bg-white\/80,
+.tt-dark .bg-white\/95,
+.tt-dark .bg-green-50,
+.tt-dark .bg-green-50\/50,
+.tt-dark .bg-green-50\/60,
+.tt-dark .bg-green-50\/70,
+.tt-dark .bg-green-100,
+.tt-dark .bg-green-100\/70,
+.tt-dark .bg-green-200,
+.tt-dark .bg-emerald-100,
+.tt-dark .bg-amber-100,
+.tt-dark .bg-sky-100,
+.tt-dark .bg-violet-100,
+.tt-dark .bg-rose-100,
+.tt-dark .bg-orange-100 {
+  background: #0f1b2d !important;
+  color: #edf4ff !important;
+}
+
+.tt-dark .bg-sky-100\/80 {
+  background: #102a3f !important;
+}
+
+.tt-dark .bg-amber-100\/80 {
+  background: #352812 !important;
+}
+
+.tt-dark .bg-violet-100\/80 {
+  background: #271f43 !important;
+}
+
+.tt-dark .bg-emerald-100\/80 {
+  background: #133225 !important;
+}
+
+.tt-dark .bg-rose-100\/80 {
+  background: #3a1b2a !important;
+}
+
+.tt-dark .bg-orange-100\/80 {
+  background: #3b2414 !important;
+}
+
+.tt-dark .bg-sky-100\/80.border {
+  border-color: #28587a !important;
+}
+
+.tt-dark .bg-amber-100\/80.border {
+  border-color: #75551d !important;
+}
+
+.tt-dark .bg-violet-100\/80.border {
+  border-color: #55468a !important;
+}
+
+.tt-dark .bg-emerald-100\/80.border {
+  border-color: #2d7558 !important;
+}
+
+.tt-dark .bg-rose-100\/80.border {
+  border-color: #7c3652 !important;
+}
+
+.tt-dark .bg-orange-100\/80.border {
+  border-color: #844a22 !important;
+}
+
+.tt-dark .rounded-2xl.border,
+.tt-dark .rounded-xl.border,
+.tt-dark .rounded-lg.border,
+.tt-dark .rounded-md.border,
+.tt-dark table {
+  border-color: #263750 !important;
+}
+
+.tt-dark .border-green-100,
+.tt-dark .border-green-200,
+.tt-dark .border-green-300,
+.tt-dark .border-emerald-200,
+.tt-dark .border-white\/70,
+.tt-dark .border-gray-300\/50,
+.tt-dark .divide-green-100 > :not([hidden]) ~ :not([hidden]),
+.tt-dark .divide-green-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #263750 !important;
+}
+
+.tt-dark .shadow-sm,
+.tt-dark .shadow-md,
+.tt-dark .shadow-2xl {
+  box-shadow: none !important;
+}
+
+.tt-dark .text-green-900,
+.tt-dark .text-green-800,
+.tt-dark .text-blue-800,
+.tt-dark .text-yellow-800,
+.tt-dark .text-yellow-900,
+.tt-dark .text-gray-800 {
+  color: #f4f8ff !important;
+}
+
+.tt-dark .text-green-700,
+.tt-dark .text-green-600,
+.tt-dark .text-emerald-700,
+.tt-dark .text-blue-700,
+.tt-dark .text-amber-700,
+.tt-dark .text-yellow-700,
+.tt-dark .text-gray-600,
+.tt-dark .text-slate-600 {
+  color: #b8cbe4 !important;
+}
+
+.tt-dark .text-green-500,
+.tt-dark .text-yellow-500,
+.tt-dark .text-blue-600,
+.tt-dark .text-yellow-600,
+.tt-dark .text-gray-400,
+.tt-dark .text-gray-500 {
+  color: #91acd0 !important;
+}
+
+.tt-dark .bg-green-600,
+.tt-dark .bg-emerald-600,
+.tt-dark .bg-green-500 {
+  background: #157347 !important;
+  color: #f2fff7 !important;
+}
+
+.tt-dark .bg-blue-500,
+.tt-dark .bg-blue-400 {
+  background: #1d5f99 !important;
+  color: #f0f8ff !important;
+}
+
+.tt-dark .bg-yellow-400,
+.tt-dark .bg-yellow-300 {
+  background: #9a640b !important;
+  color: #fff8e6 !important;
+}
+
+.tt-dark .bg-yellow-100,
+.tt-dark .bg-blue-50,
+.tt-dark .bg-blue-100,
+.tt-dark .bg-blue-200\/70,
+.tt-dark .bg-slate-100,
+.tt-dark .bg-gray-100,
+.tt-dark .bg-gray-200 {
+  background: #17263d !important;
+  color: #d9e7f7 !important;
+}
+
+.tt-dark button.bg-blue-100,
+.tt-dark button.bg-blue-200\/70 {
+  background: #174f86 !important;
+  color: #e5f3ff !important;
+  border-color: #2e7fc2 !important;
+}
+
+.tt-dark button.bg-blue-100:hover,
+.tt-dark button.bg-blue-200\/70:hover {
+  background: #2169ad !important;
+}
+
+.tt-dark button.bg-yellow-100,
+.tt-dark button.bg-yellow-300,
+.tt-dark button.bg-yellow-400 {
+  background: #a66b08 !important;
+  color: #fff4cf !important;
+  border-color: #d99c22 !important;
+}
+
+.tt-dark button.bg-yellow-100:hover,
+.tt-dark button.bg-yellow-300:hover,
+.tt-dark button.bg-yellow-400:hover {
+  background: #c9860c !important;
+}
+
+.tt-dark button.bg-blue-500 {
+  background: #1d6fb8 !important;
+  color: #f0f8ff !important;
+}
+
+.tt-dark button.bg-yellow-400.text-yellow-900 {
+  background: #c9860c !important;
+  color: #fff8df !important;
+}
+
+.tt-dark input,
+.tt-dark textarea,
+.tt-dark select {
+  background: #101d31 !important;
+  color: #f4f8ff !important;
+  border-color: #2c405f !important;
+}
+
+.tt-dark input::placeholder,
+.tt-dark textarea::placeholder {
+  color: #7892b4 !important;
+}
+
+.tt-dark .border-dashed {
+  border-color: #365174 !important;
+}
+
+.tt-dark .opacity-60 {
+  opacity: 0.78 !important;
+}
+
+.tt-dark .opacity-30 {
+  opacity: 0.42 !important;
+}
+
+.tt-dark .hover\:bg-green-50:hover,
+.tt-dark .hover\:bg-green-50\/70:hover,
+.tt-dark .hover\:bg-green-100:hover,
+.tt-dark .hover\:bg-green-200:hover {
+  background: #1a2a43 !important;
+}
+
+.tt-dark .no-scrollbar {
+  scrollbar-color: #314766 transparent;
+}
+
+.tt-dark .toast-tt {
+  background: #122039;
+  color: #edf4ff;
 }
 
 /* Cozy Farm score color classes */
-.cozy-100 { color: #2563eb; /* blue-600 */ }
-.cozy-90 { color: #059669; /* green-600 */ }
-.cozy-80 { color: #d97706; /* amber-600/yellowish */ }
-.cozy-70 { color: #d97706; /* amber-600 */ }
-.cozy-below { color: #dc2626; /* red-600 */ }
+.cozy-100 { color: #2563eb; }
+.cozy-90 { color: #059669; }
+.cozy-80 { color: #d97706; }
+.cozy-70 { color: #d97706; }
+.cozy-below { color: #dc2626; }
 
-.tt-dark .cozy-100 { color: #93c5fd !important; }
-.tt-dark .cozy-90 { color: #4ade80 !important; }
-.tt-dark .cozy-80 { color: #fbbf24 !important; }
-.tt-dark .cozy-70 { color: #f59e0b !important; }
-.tt-dark .cozy-below { color: #f87171 !important; }
+.tt-dark .cozy-100 { color: #8fbfff !important; }
+.tt-dark .cozy-90 { color: #75d99a !important; }
+.tt-dark .cozy-80 { color: #f5c76b !important; }
+.tt-dark .cozy-70 { color: #e8a94d !important; }
+.tt-dark .cozy-below { color: #ff8f8f !important; }
