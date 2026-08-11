@@ -273,12 +273,16 @@ export default function App() {
 
     return { entries, invalidNumbers };
   };
-
+  
   const handleBulkImport = async () => {
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
+  if (!currentUser) {
+    setShowAuthModal(true);
+    return;
+  }
+  const confirmApply = window.confirm(
+    '¿Estás seguro de que deseas aplicar la carga rápida? Esto sobrescribirá el estado actual de tus cartas.'
+  );
+  if (!confirmApply) return;
 
     const tradeResult = parseBulkCardNumbers(bulkTradeText, { allowQuantity: true });
     const lookingForResult = parseBulkCardNumbers(bulkLookingForText);
@@ -400,7 +404,7 @@ export default function App() {
       const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
       const getRarityLabel = (card) => card.defaultFrame === 'gold' ? '\uD83D\uDFE1' : '\uD83D\uDD35';
       const getCardLabel = (entry) => {
-        const number = `#${String(getCardNumber(entry.card)).padStart(3, '0')}`;
+        const number = `${String(getCardNumber(entry.card))}`;
         return entry.quantity > 1 ? `${number} x${entry.quantity}` : number;
       };
       const groupByType = (entries) =>

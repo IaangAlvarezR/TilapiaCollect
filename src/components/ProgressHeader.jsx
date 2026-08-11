@@ -4,9 +4,11 @@ export function ProgressHeader({ users = [], allProgress = {}, cards = [] }) {
   const progressEntries = users
     .map((user) => {
       const userProgress = allProgress[user.uid] || {};
-      const collected = Object.values(userProgress).reduce((sum, entry) => {
-        const count = typeof entry === 'number' ? entry : entry?.count || 0;
-        return sum + count;
+      const collected = cards.reduce((sum, card) => {
+      const entry = userProgress[card.id];
+      const count = typeof entry === 'number' ? entry : entry?.count || 0;
+
+      return sum + (count > 0 ? 1 : 0);
       }, 0);
 
       const duplicateCards = cards
