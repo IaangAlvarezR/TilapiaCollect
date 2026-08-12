@@ -402,7 +402,7 @@ export default function App() {
           : (rawProgress?.count || rawProgress?.[progressType] || 0);
       };
       const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
-      const getRarityLabel = (card) => card.defaultFrame === 'gold' ? '\uD83D\uDFE1' : '\uD83D\uDD35';
+      const getRarityLabel = (card) => card.defaultFrame === 'gold' ? 'G' : 'B';
       const getCardLabel = (entry) => {
         const number = `${String(getCardNumber(entry.card))}`;
         return entry.quantity > 1 ? `${number} x${entry.quantity}` : number;
@@ -410,7 +410,7 @@ export default function App() {
       const groupByType = (entries) =>
         entries.reduce((groups, entry) => {
           const key = `${entry.card.stars || 0}-${entry.card.defaultFrame}`;
-          const label = `(${entry.card.stars || 0} \u2B50 · ${getRarityLabel(entry.card)})`;
+          const label = ` ${entry.card.stars || 0}★·${getRarityLabel(entry.card)}`;
 
           return {
             ...groups,
@@ -595,9 +595,9 @@ export default function App() {
             <div className="max-w-md mx-auto bg-white border border-green-200 rounded-lg p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-black text-green-800">Carga rapida</h2>
+                  <h2 className="text-sm font-black text-green-800">Carga rapida de album</h2>
                   <p className="text-[11px] text-green-600">
-                    Pega tus duplicadas (FT) y/o las que te faltan (LF). Puedes llenar solo uno, el sistema llenará lo demas en automático.
+                    Pega tus duplicadas (FT) y/o las que te faltan (LF). El album se llenara en automatico para que no ingreses uno a uno.
                   </p>
                 </div>
                 <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-black text-green-700">
