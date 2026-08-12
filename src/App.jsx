@@ -402,7 +402,7 @@ export default function App() {
           : (rawProgress?.count || rawProgress?.[progressType] || 0);
       };
       const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
-      const getRarityLabel = (card) => card.defaultFrame === 'gold' ? 'G' : 'B';
+      const getRarityLabel = (card) => card.defaultFrame === 'gold' ? 'Gold' : 'Blue';
       const getCardLabel = (entry) => {
         const number = `${String(getCardNumber(entry.card))}`;
         return entry.quantity > 1 ? `${number} x${entry.quantity}` : number;
