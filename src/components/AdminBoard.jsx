@@ -186,13 +186,17 @@ export function AdminBoard({ currentUser }) {
               onClick={() => {
                 const existing = localStorage.getItem('cozy_created_code');
                 if (existing) {
-                  const useExisting = window.confirm(`Ya tienes una lista creada (${existing}).\nAceptar = usarla ahora.\nCancelar = no hacer nada.`);
-                  if (useExisting) {
+                  const createNew = window.confirm(
+                    `Ya tienes una lista creada (${existing}).\nAceptar = crear una nueva lista reemplazando la anterior.\nCancelar = usar la existente.`
+                  );
+                  if (!createNew) {
                     setCurrentGroupCode(existing);
                     setEntries([]);
+                    return;
                   }
-                  return;
+                  // If user confirmed, fall through to create a new code and overwrite stored one
                 }
+
                 const code = Math.random().toString(36).substring(2, 8).toUpperCase();
                 localStorage.setItem('cozy_created_code', code);
                 setCreatedCode(code);

@@ -96,11 +96,16 @@ export default function App() {
         const savedProgress = progressResult.status === 'fulfilled' ? progressResult.value : null;
         const savedUsers = usersResult.status === 'fulfilled' ? usersResult.value : [];
 
+        const hasLocalGeneral = !!localStorage.getItem('album_general_config');
+        const hasLocalProgress = !!localStorage.getItem('team_album_progress');
+
         if (savedUsers.length > 0) {
           setUsers(savedUsers);
         }
 
-        if (cardRows.length > 0) {
+        // If the user already has a local album config, prefer it to avoid
+        // overwriting recent local edits that may not have been synced to Supabase.
+        if (cardRows.length > 0 && !hasLocalGeneral) {
           setGeneralConfig((prev) =>
             prev.map((page) => ({
               ...page,
@@ -119,7 +124,8 @@ export default function App() {
           );
         }
 
-        if (savedProgress) setAllProgress(savedProgress);
+        // Respect local progress cache too. If no local cache exists, load from Supabase.
+        if (savedProgress && !hasLocalProgress) setAllProgress(savedProgress);
       } catch (error) {
         console.warn('No se pudo cargar Supabase; usando datos locales.', error.message);
       }
