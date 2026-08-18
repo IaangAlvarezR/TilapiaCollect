@@ -151,52 +151,6 @@ export function Card({
           +
         </button>
       </div>
-
-      {/* Lista de usuarios */}
-      {usersWithCard.length > 0 && (
-        <div className="w-full mt-2 bg-green-50 rounded-lg p-1.5 border border-green-200 text-left max-h-24 overflow-y-auto no-scrollbar">
-          <p className="text-[9px] font-bold text-green-700 mb-1">Tienen esta carta:</p>
-          <ul className="space-y-1">
-            {usersWithCard.map((u) => (
-              <li key={u.uid} className="flex justify-between items-center bg-white rounded p-1 border border-green-100 shadow-sm">
-                <span className="text-[10px] text-green-900 font-bold truncate pr-1">{u.name}</span>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(u.uid);
-                        const el = document.createElement('div');
-                        el.textContent = 'UID copiado';
-                        Object.assign(el.style, {
-                          position: 'fixed',
-                          bottom: '16px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: 'rgba(0,0,0,0.8)',
-                          color: 'white',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          zIndex: 9999,
-                          fontSize: '12px'
-                        });
-                        document.body.appendChild(el);
-                        setTimeout(() => el.remove(), 1800);
-                      } catch (err) {
-                        console.warn('No se pudo copiar UID', err);
-                      }
-                    }}
-                    className="text-green-500 hover:text-green-800 bg-green-50 hover:bg-green-200 rounded px-2 py-1 text-[11px] font-black"
-                      title="Copiar UID"
-                      aria-label="Copiar UID"
-                    >
-                      📋
-                    </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

@@ -59,8 +59,7 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState('');
-  const [bulkTradeText, setBulkTradeText] = useState('');
-  const [bulkLookingForText, setBulkLookingForText] = useState('');
+  const [selectedAutoFillOptions, setSelectedAutoFillOptions] = useState([]);
   const [bulkImportStatus, setBulkImportStatus] = useState('');
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -236,7 +235,7 @@ export default function App() {
   const allCards = generalConfig.flatMap((page) => page.cards);
   const completedCards = Object.values(currentUserProgress).reduce((sum, entry) => {
     const count = typeof entry === 'number' ? entry : entry?.count || 0;
-    return sum + count;
+    return sum + (count > 0 ? 1 : 0);
   }, 0);
   const progressPercentage = allCards.length > 0 ? Math.round((completedCards / allCards.length) * 100) : 0;
   const totalSetPages = generalConfig.length;
@@ -252,68 +251,183 @@ export default function App() {
   };
   const activeSetMatchingCards = activeSet?.cards.filter(matchesFilter).length || 0;
   const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
+  const getCardCount = (card, progressState = {}) => {
+    const rawProgress = progressState[card.id];
+    const progressType = card.defaultFrame === 'gold' ? 'goldCount' : 'basicCount';
 
-  const parseBulkCardNumbers = (text, { allowQuantity = false } = {}) => {
-    const entries = new Map();
-    const invalidNumbers = [];
-    const pattern = /#?(\d{1,3})(?:\s*[xX]\s*(\d+))?/g;
-    let match;
-
-    while ((match = pattern.exec(text || '')) !== null) {
-      const number = Number(match[1]);
-      const quantity = allowQuantity ? Math.max(1, Number(match[2] || 1)) : 1;
-
-      if (!Number.isInteger(number) || number < 1 || number > allCards.length) {
-        invalidNumbers.push(match[1]);
-        continue;
-      }
-
-      entries.set(number, (entries.get(number) || 0) + quantity);
-    }
-
-    return { entries, invalidNumbers };
+    return typeof rawProgress === 'number'
+      ? rawProgress
+      : (rawProgress?.count || rawProgress?.[progressType] || 0);
   };
-  
-  const handleBulkImport = async () => {
-  if (!currentUser) {
-    setShowAuthModal(true);
-    return;
-  }
-  const confirmApply = window.confirm(
-    '¿Estás seguro de que deseas aplicar la carga rápida? Esto sobrescribirá el estado actual de tus cartas.'
-  );
-  if (!confirmApply) return;
 
-    const tradeResult = parseBulkCardNumbers(bulkTradeText, { allowQuantity: true });
-    const lookingForResult = parseBulkCardNumbers(bulkLookingForText);
-    const tradeNumbers = tradeResult.entries;
-    const lookingForNumbers = lookingForResult.entries;
-    const overlappingNumbers = [...tradeNumbers.keys()].filter((number) => lookingForNumbers.has(number));
-    const invalidNumbers = [...tradeResult.invalidNumbers, ...lookingForResult.invalidNumbers];
+  const renderHelpSummary = () => {
+    const isDark = darkMode;
+    const panelClasses = isDark
+      ? 'rounded-2xl border border-slate-700 bg-[#0b1f2d] p-3 shadow-sm'
+      : 'rounded-2xl border border-green-200 bg-white p-3 shadow-sm';
+    const headingClasses = isDark ? 'text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300' : 'text-[10px] font-black uppercase tracking-[0.2em] text-green-700';
+    const titleClasses = isDark ? 'mt-1 text-base font-black text-emerald-50' : 'mt-1 text-base font-black text-green-800';
+    const countClasses = isDark
+      ? 'mt-3 flex items-center justify-between gap-3 rounded-xl bg-[#143246] px-3 py-2 border border-emerald-500/20'
+      : 'mt-3 flex items-center justify-between gap-3 rounded-xl bg-green-50 px-3 py-2';
+    const countLabelClasses = isDark ? 'text-xs font-bold text-slate-200' : 'text-xs font-bold text-green-700';
+    const countBadgeClasses = isDark ? 'rounded-full bg-emerald-400 px-2 py-1 text-xs font-black text-slate-950 shadow-sm shadow-emerald-500/20' : 'rounded-full bg-green-600 px-2 py-1 text-xs font-black text-white';
+    const emptyClasses = isDark ? 'mt-3 text-sm text-slate-200' : 'mt-3 text-sm text-green-700';
+    const cardClasses = isDark
+      ? 'rounded-xl border border-slate-600 bg-[#12283a] p-2.5 text-slate-100 shadow-sm shadow-slate-950/20'
+      : 'rounded-xl border border-green-200 bg-green-50/80 p-2.5';
+    const personNameClasses = isDark ? 'text-sm font-black text-emerald-200' : 'text-sm font-black text-green-800';
+    const personMetaClasses = isDark ? 'text-[11px] font-bold text-emerald-300' : 'text-[11px] font-bold text-green-700';
+    const personTextClasses = isDark ? 'mt-2 text-[11px] leading-5 text-slate-200' : 'mt-2 text-[11px] leading-5 text-green-700';
 
-    if (overlappingNumbers.length > 0) {
-      setBulkImportStatus(`Revisa estos numeros: ${overlappingNumbers.join(', ')} estan en FT y LF.`);
+    if (!currentUser) {
+      return (
+        <div className={panelClasses}>
+          <p className={headingClasses}>
+            Ayuda a tu equipo
+          </p>
+          <p className={isDark ? 'mt-2 text-sm text-slate-200' : 'mt-2 text-sm text-green-700'}>
+            Inicia sesión para ver a quién puedes ayudar con tus cartas repetidas.
+          </p>
+        </div>
+      );
+    }
+
+    const duplicateCards = allCards
+      .map((card) => ({
+        card,
+        count: getCardCount(card, currentUserProgress),
+      }))
+      .filter((entry) => entry.count > 1)
+      .map((entry) => ({
+        ...entry,
+        spare: entry.count - 1,
+        number: getCardNumber(entry.card),
+      }));
+
+    const totalAvailable = duplicateCards.reduce((sum, entry) => sum + entry.spare, 0);
+    const peopleWhoNeedHelp = users
+      .filter((user) => user.uid !== currentUser.uid)
+      .map((user) => {
+        const userProgress = allProgress[user.uid] || {};
+        const missingCards = duplicateCards
+          .filter((entry) => {
+            const userCount = getCardCount(entry.card, userProgress);
+            return userCount === 0;
+          })
+          .map((entry) => ({
+            number: entry.number,
+            stars: entry.card.stars || 0,
+            rarity: entry.card.defaultFrame === 'gold' ? 'Gold' : 'Azul',
+          }))
+          .sort((a, b) => a.number - b.number)
+          .reduce((groups, card) => {
+            const key = `${card.rarity}|${card.stars}`;
+            if (!groups[key]) {
+              groups[key] = { rarity: card.rarity, stars: card.stars, numbers: [] };
+            }
+            groups[key].numbers.push(card.number);
+            return groups;
+          }, {});
+
+        return {
+          name: user.name || 'Sin nombre',
+          missingCards: Object.values(missingCards).map((group) => ({
+            label: `${group.rarity} ${group.stars}★`,
+            numbers: group.numbers,
+          })),
+        };
+      })
+      .filter((entry) => entry.missingCards.length > 0)
+      .sort((a, b) => b.missingCards.reduce((sum, group) => sum + group.numbers.length, 0) - a.missingCards.reduce((sum, group) => sum + group.numbers.length, 0))
+      .slice(0, 5);
+
+    return (
+      <div className={panelClasses}>
+        <p className={headingClasses}>Ayuda al equipo</p>
+        <h3 className={titleClasses}>
+          Puedes ayudar a las siguientes personas con tus siguientes cartas repetidas
+        </h3>
+
+        <div className={countClasses}>
+          <span className={countLabelClasses}>Cartas repetidas disponibles</span>
+          <span className={countBadgeClasses}>{totalAvailable}</span>
+        </div>
+
+        {peopleWhoNeedHelp.length === 0 ? (
+          <p className={emptyClasses}>
+            Por ahora no hay personas que necesiten tus cartas repetidas, pero puedes seguir completando el álbum con tus extras.
+          </p>
+        ) : (
+          <div className={`mt-3 space-y-2 ${peopleWhoNeedHelp.length > 4 ? 'max-h-[320px] overflow-y-auto pr-1' : ''}`}>
+            {peopleWhoNeedHelp.map((person) => (
+              <div key={person.name} className={cardClasses}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={personNameClasses}>{person.name}</span>
+                  <span className={personMetaClasses}>{person.missingCards.reduce((sum, group) => sum + group.numbers.length, 0)} necesarias</span>
+                </div>
+                <div className={`mt-2 ${personTextClasses}`}>
+                  {person.missingCards.map((group) => (
+                    <div key={`${group.label}-${group.numbers.join('-')}`} className="mt-1">
+                      <span className="font-black">{group.label}:</span>
+                      <span> {group.numbers.map((cardNumber) => `#${cardNumber}`).join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleApplyChanges = async () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (selectedAutoFillOptions.length === 0) {
+      setBulkImportStatus('Selecciona al menos una opción de llenado.');
+      window.setTimeout(() => setBulkImportStatus(''), 2000);
       return;
     }
 
-    if (invalidNumbers.length > 0) {
-      setBulkImportStatus(`Hay numeros fuera del album: ${invalidNumbers.join(', ')}.`);
-      return;
-    }
+    const confirmApply = window.confirm('¿Estás seguro de que deseas aplicar la carga rápida con las opciones seleccionadas?');
+    if (!confirmApply) return;
 
     setIsBulkImporting(true);
-    setBulkImportStatus('Aplicando carga rapida...');
+    setBulkImportStatus('Aplicando cambios...');
 
-    const nextUserProgress = allCards.reduce((progress, card) => {
-      const number = getCardNumber(card);
-      const extraTradeCopies = tradeNumbers.get(number) || 0;
-      const count = lookingForNumbers.has(number) ? 0 : extraTradeCopies + 1;
+    const cardsToUpdate = allCards.filter(card => {
+      return selectedAutoFillOptions.some(option => {
+        if (option.startsWith('star-')) {
+          return card.stars === parseInt(option.replace('star-', ''), 10);
+        }
+        if (option.startsWith('quality-')) {
+          return card.defaultFrame === option.replace('quality-', '');
+        }
+        return false;
+      });
+    });
 
-      return {
-        ...progress,
-        [card.id]: { count },
-      };
-    }, {});
+    const nextUserProgress = { ...currentUserProgress };
+    let addedCount = 0;
+    
+    cardsToUpdate.forEach(card => {
+      const currentCount = typeof nextUserProgress[card.id] === 'number' ? nextUserProgress[card.id] : (nextUserProgress[card.id]?.count || 0);
+      if (currentCount === 0) {
+        nextUserProgress[card.id] = { count: 1 };
+        addedCount++;
+      }
+    });
+
+    if (addedCount === 0) {
+      setBulkImportStatus('Ya tienes todas las cartas de las opciones seleccionadas.');
+      setIsBulkImporting(false);
+      window.setTimeout(() => setBulkImportStatus(''), 4200);
+      return;
+    }
 
     setAllProgress((prev) => ({
       ...prev,
@@ -322,12 +436,57 @@ export default function App() {
 
     try {
       await Promise.all(
-        allCards.map((card) => saveCardProgress(currentUser.uid, card.id, nextUserProgress[card.id].count))
+        cardsToUpdate.map((card) => {
+          const currentCount = typeof currentUserProgress[card.id] === 'number' ? currentUserProgress[card.id] : (currentUserProgress[card.id]?.count || 0);
+          if (currentCount === 0) {
+            return saveCardProgress(currentUser.uid, card.id, 1);
+          }
+          return Promise.resolve();
+        })
       );
-      setBulkImportStatus(`Carga lista: ${tradeNumbers.size} FT y ${lookingForNumbers.size} LF aplicados.`);
+      setBulkImportStatus(`Se llenaron ${addedCount} cartas correctamente.`);
+      setSelectedAutoFillOptions([]); // Reset selection
     } catch (error) {
-      console.warn('No se pudo guardar la carga rapida en Supabase.', error.message);
-      setBulkImportStatus('Se aplico localmente, pero no se pudo guardar todo en Supabase.');
+      console.warn('No se pudo guardar en Supabase.', error.message);
+      setBulkImportStatus('Se aplicó localmente, pero hubo un error al guardar en Supabase.');
+    } finally {
+      setIsBulkImporting(false);
+      window.setTimeout(() => setBulkImportStatus(''), 4200);
+    }
+  };
+
+  const handleResetAlbum = async () => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    const confirmReset = window.confirm('¿Estás seguro de que deseas resetear tu álbum? Esto pondrá todas tus cartas en 0 y no se puede deshacer.');
+    if (!confirmReset) return;
+
+    setIsBulkImporting(true);
+    setBulkImportStatus('Reseteando álbum...');
+
+    const cardsToReset = allCards.filter(card => {
+      const rawProgress = currentUserProgress[card.id];
+      const count = typeof rawProgress === 'number' ? rawProgress : (rawProgress?.count || 0);
+      return count > 0;
+    });
+
+    const nextUserProgress = {};
+    
+    setAllProgress((prev) => ({
+      ...prev,
+      [currentUser.uid]: nextUserProgress,
+    }));
+
+    try {
+      await Promise.all(
+        cardsToReset.map((card) => saveCardProgress(currentUser.uid, card.id, 0))
+      );
+      setBulkImportStatus('Álbum reseteado correctamente.');
+    } catch (error) {
+      console.warn('No se pudo guardar en Supabase.', error.message);
+      setBulkImportStatus('Se aplicó localmente, pero hubo un error al guardar en Supabase.');
     } finally {
       setIsBulkImporting(false);
       window.setTimeout(() => setBulkImportStatus(''), 4200);
@@ -449,6 +608,8 @@ export default function App() {
 
       const summaryText = [
         '**Tilapia Tools**',
+        '🌐 https://tilapia-collect.vercel.app/',
+        '',
         `Jugador: ${currentUser.name}`,
         `UID: ${currentUser.uid}`,
         '',
@@ -491,8 +652,8 @@ export default function App() {
       });
 
     const summaryText = duplicateEntries.length > 0
-      ? `FT:\n${duplicateEntries.join('\n')}`
-      : 'No tienes cartas duplicadas.';
+      ? `**Tilapia Tools**\n🌐 https://tilapia-collect.vercel.app/\n\nFT:\n${duplicateEntries.join('\n')}`
+      : '**Tilapia Tools**\n🌐 https://tilapia-collect.vercel.app/\n\nNo tienes cartas duplicadas.';
 
     try {
       await navigator.clipboard.writeText(summaryText);
@@ -595,9 +756,9 @@ export default function App() {
             <div className="max-w-md mx-auto bg-white border border-green-200 rounded-lg p-3 shadow-sm">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-black text-green-800">Carga rapida de album</h2>
+                  <h2 className="text-sm font-black text-green-800">Llenado Automático de Cartas</h2>
                   <p className="text-[11px] text-green-600">
-                    Pega tus duplicadas (FT) y/o las que te faltan (LF). El album se llenara en automatico para que no ingreses uno a uno.
+                    Selecciona las categorías de cartas que ya completaste para marcarlas todas a la vez en tu álbum, en lugar de hacerlo una por una.
                   </p>
                 </div>
                 <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-black text-green-700">
@@ -605,49 +766,79 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="grid gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-green-700">
-                    For Trade
-                  </span>
-                  <textarea
-                    value={bulkTradeText}
-                    onChange={(event) => setBulkTradeText(event.target.value)}
-                    rows="3"
-                    placeholder="Pega tus duplicadas aquí (Ej: #004, #018 x2)"
-                    className="w-full resize-y rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-900 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-green-700">
-                    Looking For
-                  </span>
-                  <textarea
-                    value={bulkLookingForText}
-                    onChange={(event) => setBulkLookingForText(event.target.value)}
-                    rows="3"
-                    placeholder="Pega las que te faltan aquí (Ej: #001, #002)"
-                    className="w-full resize-y rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-900 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
-                  />
-                </label>
+              <div className="mb-4">
+                <span className="mb-2 block text-[10px] font-black uppercase tracking-wide text-green-700">
+                  Opciones de llenado rápido
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map(star => {
+                    const optionId = `star-${star}`;
+                    const isSelected = selectedAutoFillOptions.includes(optionId);
+                    return (
+                      <button
+                        key={optionId}
+                        type="button"
+                        onClick={() => setSelectedAutoFillOptions(prev => isSelected ? prev.filter(o => o !== optionId) : [...prev, optionId])}
+                        disabled={!currentUser || isBulkImporting}
+                        className={`rounded-lg px-2 py-1 text-[10px] font-black shadow-sm transition-colors ${
+                          isSelected ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                      >
+                        {star} ⭐
+                      </button>
+                    );
+                  })}
+                  {['basic', 'gold'].map(quality => {
+                    const optionId = `quality-${quality}`;
+                    const isSelected = selectedAutoFillOptions.includes(optionId);
+                    const label = quality === 'basic' ? 'Azul' : 'Gold';
+                    const colors = quality === 'basic' 
+                      ? (isSelected ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800 hover:bg-blue-200')
+                      : (isSelected ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200');
+                    return (
+                      <button
+                        key={optionId}
+                        type="button"
+                        onClick={() => setSelectedAutoFillOptions(prev => isSelected ? prev.filter(o => o !== optionId) : [...prev, optionId])}
+                        disabled={!currentUser || isBulkImporting}
+                        className={`rounded-lg px-2 py-1 text-[10px] font-black shadow-sm transition-colors ${colors}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={handleBulkImport}
-                  disabled={!currentUser || isBulkImporting}
-                  className={`rounded-xl px-3 py-2 text-xs font-black shadow-sm transition ${
-                    currentUser && !isBulkImporting
-                      ? 'bg-green-600 text-white hover:bg-green-500'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  {isBulkImporting ? 'Aplicando...' : 'Aplicar carga rapida'}
-                </button>
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleApplyChanges}
+                    disabled={!currentUser || isBulkImporting}
+                    className={`rounded-xl px-3 py-2 text-xs font-black shadow-sm transition ${
+                      currentUser && !isBulkImporting
+                        ? 'bg-green-600 text-white hover:bg-green-500'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {isBulkImporting ? 'Aplicando...' : 'Aplicar Cambios'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetAlbum}
+                    disabled={!currentUser || isBulkImporting}
+                    className={`rounded-xl px-3 py-2 text-xs font-black shadow-sm transition ${
+                      currentUser && !isBulkImporting
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Resetear álbum
+                  </button>
+                </div>
                 {bulkImportStatus && (
-                  <span className="text-right text-[11px] font-semibold text-green-700">
+                  <span className="text-left sm:text-right text-[11px] font-semibold text-green-700">
                     {bulkImportStatus}
                   </span>
                 )}
@@ -655,7 +846,7 @@ export default function App() {
             </div>
           </section>
 
-          <AdminBoard isAdmin={isGeneralMode} />
+          <AdminBoard currentUser={currentUser} />
         </div>
       </section>
 
@@ -689,10 +880,10 @@ export default function App() {
           </div>
         )}
 
-        {renderSetPagination()}
+        {renderHelpSummary(darkMode)}
       </main>
 
-      <ProgressHeader users={users} allProgress={allProgress} cards={allCards} />
+      <ProgressHeader users={users} allProgress={allProgress} cards={allCards} darkMode={darkMode} />
 
       {showAuthModal && (
         <AuthModal

@@ -100,7 +100,19 @@ export async function registerUser(uid, name, pin) {
   return data
 }
 
-export async function loadAdminBoardEntries() {
+export async function loadAdminBoardEntries(groupCode) {
+  const { data, error } = await supabase
+    .from('admin_board_entries')
+    .select('*')
+    .eq('group_code', groupCode)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return data || []
+}
+
+export async function loadAllAdminBoardEntries() {
   const { data, error } = await supabase
     .from('admin_board_entries')
     .select('*')
@@ -111,10 +123,11 @@ export async function loadAdminBoardEntries() {
   return data || []
 }
 
-export async function saveAdminBoardEntry(entry) {
+export async function saveAdminBoardEntry(entry, groupCode) {
   const payload = {
     id: entry.id || undefined,
     uid: entry.uid,
+    group_code: groupCode,
     stat0: entry.stat0 ?? 0,
     stat1: entry.stat1 ?? 0,
     stat2: entry.stat2 ?? 0,
@@ -124,7 +137,7 @@ export async function saveAdminBoardEntry(entry) {
 
   const { data, error } = await supabase
     .from('admin_board_entries')
-    .upsert(payload, { onConflict: 'uid' })
+    .upsert(payload, { onConflict: 'uid,group_code' })
     .select()
     .single()
 
