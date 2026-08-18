@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { deleteAdminBoardEntry, loadAdminBoardEntries, loadAllAdminBoardEntries, saveAdminBoardEntry } from '../services/albumStore';
+import { deleteAdminBoardEntry, deleteAdminBoardEntriesByUid, loadAdminBoardEntries, loadAllAdminBoardEntries, saveAdminBoardEntry } from '../services/albumStore';
 
 const emptyForm = {
   uid: '',
@@ -18,6 +18,7 @@ export function AdminBoard({ currentUser }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [currentGroupCode, setCurrentGroupCode] = useState(() => localStorage.getItem('cozy_group_code') || '');
+  const [createdCode, setCreatedCode] = useState(() => localStorage.getItem('cozy_created_code') || '');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
 
   useEffect(() => {
@@ -183,7 +184,18 @@ export function AdminBoard({ currentUser }) {
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
             <button 
               onClick={() => {
+                const existing = localStorage.getItem('cozy_created_code');
+                if (existing) {
+                  const useExisting = window.confirm(`Ya tienes una lista creada (${existing}).\nAceptar = usarla ahora.\nCancelar = no hacer nada.`);
+                  if (useExisting) {
+                    setCurrentGroupCode(existing);
+                    setEntries([]);
+                  }
+                  return;
+                }
                 const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                localStorage.setItem('cozy_created_code', code);
+                setCreatedCode(code);
                 setCurrentGroupCode(code);
                 setEntries([]);
               }}
@@ -191,6 +203,17 @@ export function AdminBoard({ currentUser }) {
             >
               Crear nueva lista
             </button>
+            { !currentGroupCode && createdCode && (
+              <button
+                onClick={() => {
+                  setCurrentGroupCode(createdCode);
+                  setEntries([]);
+                }}
+                className="mt-2 bg-white text-green-800 font-bold py-2 px-4 rounded-xl border border-green-200 hover:bg-green-50"
+              >
+                Reabrir mi lista ({createdCode})
+              </button>
+            )}
             <div className="relative flex items-center">
               <div className="flex-grow border-t border-green-300"></div>
               <span className="flex-shrink-0 mx-4 text-green-500 text-xs font-bold uppercase">O</span>
@@ -300,9 +323,7 @@ export function AdminBoard({ currentUser }) {
                   <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('prom')}>
                     Prom. {sortConfig.key === 'prom' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  {!(currentGroupCode === '0001' && currentUser?.is_admin) && (
-                    <th className="px-2 py-2 font-black">Acción</th>
-                  )}
+                  <th className="px-2 py-2 font-black">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-green-100">
@@ -377,8 +398,38 @@ export function AdminBoard({ currentUser }) {
                           );
                         })}
                         <td className={`px-2 py-2 font-black ${avgClass}`}>{average}</td>
-                        {!(currentGroupCode === '0001' && currentUser?.is_admin) && (
-                          <td className="px-2 py-2">
+                        <td className="px-2 py-2">
+                          {currentGroupCode === '0001' ? (
+                            <div className="flex gap-1 items-center">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!currentUser?.is_admin) {
+                                    setStatus('Solo administradores pueden eliminar UIDs en 0001.');
+                                    return;
+                                  }
+                                  const confirmDelete = window.confirm(`Eliminar todas las entradas del UID ${entry.uid}? Esta acción no se puede deshacer.`);
+                                  if (!confirmDelete) return;
+                                  try {
+                                    await deleteAdminBoardEntriesByUid(entry.uid);
+                                    setEntries((prev) => prev.filter((e) => e.uid !== entry.uid));
+                                    setStatus(`UID ${entry.uid} eliminado de todas las listas.`);
+                                  } catch (err) {
+                                    console.error('Error eliminando UID', err);
+                                    setStatus('No se pudo eliminar el UID.');
+                                  }
+                                }}
+                                className={`rounded-lg px-2 py-1 text-[10px] font-black ${currentUser?.is_admin ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                                title={currentUser?.is_admin ? 'Eliminar UID en todas las listas' : 'Solo administradores'}
+                                aria-label="Eliminar UID en todas las listas"
+                              >
+                                🗑️
+                              </button>
+                              {!currentUser?.is_admin && (
+                                <span className="text-[11px] text-gray-500">(solo admins)</span>
+                              )}
+                            </div>
+                          ) : (
                             <div className="flex gap-1">
                               <button
                                 type="button"
@@ -399,8 +450,8 @@ export function AdminBoard({ currentUser }) {
                                 🗑️
                               </button>
                             </div>
-                          </td>
-                        )}
+                          )}
+                        </td>
                       </tr>
                     );
                   })

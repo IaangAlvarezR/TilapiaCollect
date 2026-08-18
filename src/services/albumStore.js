@@ -155,3 +155,12 @@ export async function deleteAdminBoardEntry(id) {
   if (error) throw error
 }
 
+export async function deleteAdminBoardEntriesByUid(uid) {
+  const { error } = await supabase
+    .from('admin_board_entries')
+    .delete()
+    .eq('uid', uid)
+
+  if (error) throw error
+}
+
