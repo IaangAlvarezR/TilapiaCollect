@@ -38,13 +38,34 @@ export async function saveGeneralCard(card) {
 }
 
 export async function loadTeamProgress() {
-  const { data, error } = await supabase
-    .from('player_progress')
-    .select('user_id,card_id,count')
+  let allRows = []
+  let page = 0
+  const pageSize = 1000
+  let hasMore = true
 
-  if (error) throw error
+  while (hasMore) {
+    const from = page * pageSize
+    const to = from + pageSize - 1
+    const { data, error } = await supabase
+      .from('player_progress')
+      .select('user_id,card_id,count')
+      .range(from, to)
 
-  return (data || []).reduce((progress, row) => {
+    if (error) throw error
+
+    if (data && data.length > 0) {
+      allRows.push(...data)
+      if (data.length < pageSize) {
+        hasMore = false
+      } else {
+        page++
+      }
+    } else {
+      hasMore = false
+    }
+  }
+
+  return allRows.reduce((progress, row) => {
     progress[row.user_id] ||= {}
     progress[row.user_id][row.card_id] = { count: row.count || 0 }
     return progress
@@ -120,6 +141,28 @@ export async function flushPendingUpdates() {
 
   writePending(remaining)
 }
+
+// Guarda todo el progreso del usuario en una sola petición batch
+export async function saveAllProgress(userId, progressMap) {
+  const rows = Object.entries(progressMap).map(([cardId, entry]) =>
+    toProgressRow(userId, cardId, typeof entry === 'number' ? entry : entry?.count ?? 0)
+  )
+
+  if (rows.length === 0) return
+
+  const { data, error } = await supabase
+    .from('player_progress')
+    .upsert(rows, { onConflict: 'user_id,card_id', ignoreDuplicates: false })
+    .select()
+
+  if (error) {
+    console.error('[saveAllProgress] Error de Supabase:', error)
+    throw error
+  }
+
+  return data
+}
+
 
 // Usuarios
 export async function loadUsers() {

@@ -1,8 +1,6 @@
 export function Card({
   cardData,
   userProgress,
-  allProgress,
-  users,
   onToggleCard,
   isGeneralMode,
   onUpdateCardConfig,
@@ -22,18 +20,6 @@ export function Card({
   const hasCard = count > 0;
   const fallbackLabel = String(globalCardNumber);
   const displayName = cardData.name && !/^Foto\s+\d+$/.test(cardData.name) ? cardData.name : fallbackLabel;
-
-  // Encontrar quién tiene esta carta
-  const usersWithCard = Object.entries(allProgress || {})
-    .filter(([uid, progress]) => {
-      const raw = progress[cardData.id];
-      const c = typeof raw === 'number' ? raw : (raw?.count || raw?.[progressType] || 0);
-      return c > 0;
-    })
-    .map(([uid]) => {
-      const userObj = users?.find(u => u.uid === uid);
-      return userObj ? { name: userObj.name, uid } : { name: 'Desconocido', uid };
-    });
 
   return (
     <div className={`flex flex-col items-center bg-white p-2 rounded-2xl border border-green-200 shadow-sm ${matchesFilter ? '' : 'opacity-30 pointer-events-none'}`}>
