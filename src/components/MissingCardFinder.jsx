@@ -40,9 +40,9 @@ export function MissingCardFinder({ selectedUser, cards, allProgress, users }) {
       <div className="max-w-md mx-auto bg-white border border-green-200 rounded-lg p-3 shadow-sm">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div>
-            <h2 className="text-sm font-black text-green-800">¿Quién tiene la que te falta?</h2>
+            <h2 className="text-sm font-black text-green-800">¿Quién la tiene repetida?</h2>
             <p className="text-[11px] text-green-600">
-              Ingresa el número de tu carta faltante para ver quién la tiene repetida para intercambio.
+              Ingresa el número de carta para ver quién la tiene duplicada para trade.
             </p>
           </div>
           <input
