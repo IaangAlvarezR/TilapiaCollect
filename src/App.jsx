@@ -13,6 +13,7 @@ import {
   loadUsers,
   flushPendingUpdates,
 } from './services/albumStore';
+import { supabase } from './supabaseClient';
 
 const normalizeGeneralConfig = (pages = []) =>
   pages.map((page, index) => ({
@@ -139,6 +140,67 @@ export default function App() {
     flushPendingUpdates().catch(() => {});
 
     const onlineHandler = () => flushPendingUpdates().catch(() => {});
+    // Real-time subscriptions: update UI when remote rows change
+    const progressChannel = supabase
+      .channel('realtime-player-progress')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'player_progress' },
+        (payload) => {
+          try {
+            const row = payload.new || payload.old;
+            if (!row) return;
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              setAllProgress((prev) => {
+                const next = { ...(prev || {}) };
+                next[row.user_id] = { ...(next[row.user_id] || {}) };
+                next[row.user_id][row.card_id] = { count: row.count || 0 };
+                return next;
+              });
+            } else if (payload.eventType === 'DELETE') {
+              setAllProgress((prev) => {
+                const next = { ...(prev || {}) };
+                if (next[row.user_id]) {
+                  const userState = { ...next[row.user_id] };
+                  delete userState[row.card_id];
+                  next[row.user_id] = userState;
+                }
+                return next;
+              });
+            }
+          } catch (err) {
+            console.warn('Realtime progress handler error', err);
+          }
+        }
+      )
+      .subscribe();
+
+    const cardsChannel = supabase
+      .channel('realtime-general-cards')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'general_cards' },
+        (payload) => {
+          try {
+            const row = payload.new || payload.old;
+            if (!row) return;
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              setGeneralConfig((prev) =>
+                (prev || []).map((page) => ({
+                  ...page,
+                  cards: (page.cards || []).map((card) => (card.id === row.id ? { ...card, name: row.name, stars: row.stars, defaultFrame: row.default_frame } : card)),
+                }))
+              );
+            } else if (payload.eventType === 'DELETE') {
+              // on delete, we won't remove card from UI but log it
+              console.debug('Card deleted remotely', row.id);
+            }
+          } catch (err) {
+            console.warn('Realtime cards handler error', err);
+          }
+        }
+      )
+      .subscribe();
     const updatePending = () => {
       try {
         const raw = localStorage.getItem('tt_pending_updates');
@@ -157,6 +219,12 @@ export default function App() {
       isMounted = false;
       window.removeEventListener('online', onlineHandler);
       window.removeEventListener('storage', updatePending);
+      try {
+        supabase.removeChannel(progressChannel);
+      } catch {}
+      try {
+        supabase.removeChannel(cardsChannel);
+      } catch {}
     };
   }, []);
 
