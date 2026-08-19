@@ -575,6 +575,54 @@ export default function App() {
           </button>
         ))}
       </div>
+      <div className="mt-3 grid grid-cols-5 gap-2">
+        {generalConfig.map((set, index) => (
+          <button
+            key={`quick-load-${index}`}
+            type="button"
+            onClick={async () => {
+              if (!currentUser) { setShowAuthModal(true); return; }
+              const cards = set?.cards || [];
+              const toApply = cards.filter((card) => {
+                const raw = allProgress[currentUser.uid] || {};
+                const cur = typeof raw[card.id] === 'number' ? raw[card.id] : (raw[card.id]?.count || 0);
+                return cur === 0;
+              });
+              if (toApply.length === 0) {
+                setBulkImportStatus(`Página ${index + 1}: no hay cartas faltantes.`);
+                window.setTimeout(() => setBulkImportStatus(''), 2000);
+                return;
+              }
+              const confirmMsg = `Cargar ${toApply.length} cartas faltantes de la página ${index + 1} a tu álbum?`;
+              if (!window.confirm(confirmMsg)) return;
+
+              // Update local state
+              setAllProgress((prev) => {
+                const userState = { ...(prev[currentUser.uid] || {}) };
+                toApply.forEach((card) => { userState[card.id] = { count: 1 }; });
+                return { ...prev, [currentUser.uid]: userState };
+              });
+
+              // Persist
+              try {
+                await Promise.all(toApply.map((card) => saveCardProgress(currentUser.uid, card.id, 1).catch((e) => { console.warn('saveCardProgress failed', e); })));
+                setBulkImportStatus(`Página ${index + 1} aplicada (${toApply.length}).`);
+              } catch (err) {
+                console.warn('Error applying quick load', err);
+                setBulkImportStatus('Error al aplicar la página. Revisa la consola.');
+              } finally {
+                window.setTimeout(() => setBulkImportStatus(''), 2500);
+              }
+            }}
+            className={`h-8 rounded-lg text-xs font-bold transition ${
+              currentUser ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!currentUser}
+          >
+            Cargar {index + 1}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
