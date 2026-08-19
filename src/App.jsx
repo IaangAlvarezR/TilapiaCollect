@@ -134,6 +134,7 @@ export default function App() {
       }
     }
 
+    console.debug('Supabase URL (client):', supabase?.supabaseUrl);
     loadAlbumFromSupabase();
 
     // Try to flush any pending updates (from previous failed writes)
@@ -174,6 +175,7 @@ export default function App() {
         }
       )
       .subscribe();
+    console.debug('progressChannel subscribed:', progressChannel);
 
     const cardsChannel = supabase
       .channel('realtime-general-cards')
@@ -201,6 +203,7 @@ export default function App() {
         }
       )
       .subscribe();
+    console.debug('cardsChannel subscribed:', cardsChannel);
     const updatePending = () => {
       try {
         const raw = localStorage.getItem('tt_pending_updates');
