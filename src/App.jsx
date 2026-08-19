@@ -501,37 +501,16 @@ export default function App() {
   return (
     <div className="min-h-screen bg-green-50 text-green-900 flex flex-col font-sans max-w-xl mx-auto border-x border-green-200 shadow-2xl">
       
-      <header ref={headerRef} className="p-4 pt-6 bg-green-100 border-b border-green-200 sticky top-0 z-30">
-        <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
-          <h1 className="text-xl font-black text-green-800">
+      <header ref={headerRef} className="px-4 py-3 bg-green-100 border-b border-green-200 sticky top-0 z-30">
+        <div className="flex justify-between items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-black text-green-800 tracking-tight">
             {ALBUM_CONFIG.title}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 text-xs font-bold text-green-800 cursor-pointer select-none bg-white/80 px-2.5 py-1.5 rounded-full border border-green-300 shadow-sm hover:bg-white transition-all">
-              <input
-                type="checkbox"
-                checked={includeGoldInSummary}
-                onChange={(e) => setIncludeGoldInSummary(e.target.checked)}
-                className="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 h-3.5 w-3.5 cursor-pointer"
-              />
-              <span>Incluir Gold</span>
-            </label>
-
-            <button
-              onClick={handleGenerateSummary}
-              disabled={!currentUser}
-              className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-md ${
-                currentUser
-                  ? 'bg-emerald-600 text-white shadow-emerald-600/30 hover:bg-emerald-500'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Generar Texto Resumen
-            </button>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setDarkMode((v) => !v)}
-              className="text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-md bg-white text-green-700 border border-green-300 hover:bg-green-50"
+              className="text-xs px-2.5 py-1.5 rounded-full font-bold transition-all shadow-sm bg-white text-green-700 border border-green-300 hover:bg-green-50"
               title="Toggle dark mode"
             >
               {darkMode ? '🌙 Dark' : '🌞 Light'}
@@ -545,9 +524,9 @@ export default function App() {
                   setShowAuthModal(true);
                 }
               }}
-              className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-md ${
+              className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-sm truncate max-w-[150px] ${
                 currentUser
-                  ? 'bg-green-600 text-white shadow-green-600/30'
+                  ? 'bg-green-600 text-white shadow-green-600/30 hover:bg-green-700'
                   : 'bg-white text-green-700 border border-green-300 hover:bg-green-50'
               }`}
             >
@@ -558,7 +537,7 @@ export default function App() {
       </header>
 
       {summaryStatus && (
-        <div className="px-4 py-2 bg-emerald-100 text-emerald-700 text-xs font-semibold border-b border-emerald-200">
+        <div className="px-4 py-2 bg-emerald-100 text-emerald-700 text-xs font-semibold border-b border-emerald-200 text-center">
           {summaryStatus}
         </div>
       )}
@@ -579,9 +558,35 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-green-700">
+        <div className="flex items-center justify-between text-sm text-green-700 mb-3">
           <span>{completedCards} cartas marcadas</span>
           <span>{allCards.length} cartas totales</span>
+        </div>
+
+        {/* Acciones de Resumen */}
+        <div className="pt-3 border-t border-green-100 flex flex-wrap items-center justify-between gap-2">
+          <label className="flex items-center gap-1.5 text-xs font-bold text-green-800 cursor-pointer select-none bg-green-50 px-2.5 py-1.5 rounded-full border border-green-200 shadow-sm hover:bg-green-100 transition-all">
+            <input
+              type="checkbox"
+              checked={includeGoldInSummary}
+              onChange={(e) => setIncludeGoldInSummary(e.target.checked)}
+              className="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 h-3.5 w-3.5 cursor-pointer"
+            />
+            <span>Incluir Gold</span>
+          </label>
+
+          <button
+            onClick={handleGenerateSummary}
+            disabled={!currentUser}
+            className={`text-xs px-3.5 py-1.5 rounded-full font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+              currentUser
+                ? 'bg-emerald-600 text-white shadow-emerald-600/30 hover:bg-emerald-500'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+            }`}
+          >
+            <span>📋</span>
+            <span>Generar Texto Resumen</span>
+          </button>
         </div>
       </section>
 
