@@ -23,8 +23,12 @@ export async function loadGeneralCards() {
     .order('page', { ascending: true })
     .order('slot', { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    console.debug('loadGeneralCards error', error)
+    throw error
+  }
 
+  console.debug('loadGeneralCards rows:', Array.isArray(data) ? data.length : 0)
   return data || []
 }
 
@@ -42,7 +46,12 @@ export async function loadTeamProgress() {
     .from('player_progress')
     .select('user_id,card_id,count')
 
-  if (error) throw error
+  if (error) {
+    console.debug('loadTeamProgress error', error)
+    throw error
+  }
+
+  console.debug('loadTeamProgress rows:', Array.isArray(data) ? data.length : 0)
 
   return (data || []).reduce((progress, row) => {
     progress[row.user_id] ||= {}
@@ -127,8 +136,12 @@ export async function loadUsers() {
     .from('users')
     .select('uid,name,pin,is_admin')
 
-  if (error) throw error
+  if (error) {
+    console.debug('loadUsers error', error)
+    throw error
+  }
 
+  console.debug('loadUsers rows:', Array.isArray(data) ? data.length : 0)
   return data || []
 }
 

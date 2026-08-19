@@ -48,6 +48,7 @@ const SET_BACKGROUND_CLASSES = [
 ];
 
 export default function App() {
+  const DEBUG_UI = import.meta.env.VITE_ENABLE_DEBUG === '1' || import.meta.env.VITE_ENABLE_DEBUG === 'true';
   const [generalConfig, setGeneralConfig] = useState(() => {
     const saved = localStorage.getItem('album_general_config');
     return saved ? normalizeGeneralConfig(JSON.parse(saved)) : generateAlbumData();
@@ -61,6 +62,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
+  const [supabaseError, setSupabaseError] = useState('');
   const [selectedAutoFillOptions, setSelectedAutoFillOptions] = useState([]);
   const [bulkImportStatus, setBulkImportStatus] = useState('');
   const [isBulkImporting, setIsBulkImporting] = useState(false);
@@ -98,16 +100,30 @@ export default function App() {
         const savedProgress = progressResult.status === 'fulfilled' ? progressResult.value : null;
         const savedUsers = usersResult.status === 'fulfilled' ? usersResult.value : [];
 
-        const hasLocalGeneral = !!localStorage.getItem('album_general_config');
-        const hasLocalProgress = !!localStorage.getItem('team_album_progress');
+        // Diagnostic: surface any individual errors from the settled promises
+        const rejected = [cardResult, progressResult, usersResult].filter(r => r.status === 'rejected');
+        if (rejected.length > 0) {
+          const msgs = rejected.map(r => (r.reason && (r.reason.message || r.reason.error) ) || JSON.stringify(r.reason)).join(' | ');
+          console.warn('Supabase sub-requests rejected:', msgs);
+          setSupabaseError(msgs);
+        } else {
+          // If everything fulfilled but no rows were returned, surface for debugging
+          if ((cardRows.length === 0) && (!savedProgress || Object.keys(savedProgress).length === 0) && (savedUsers.length === 0)) {
+            const msg = 'Supabase responded but returned no rows for cards/progress/users.';
+            console.warn(msg);
+            setSupabaseError(msg);
+          }
+        }
 
+        // Merge remote users
         if (savedUsers.length > 0) {
           setUsers(savedUsers);
         }
 
-        // If the user already has a local album config, prefer it to avoid
-        // overwriting recent local edits that may not have been synced to Supabase.
-        if (cardRows.length > 0 && !hasLocalGeneral) {
+        // Merge remote card metadata into current UI config. Always merge so
+        // remote updates (names, stars, frames) are reflected while keeping
+        // any local-only fields.
+        if (cardRows.length > 0) {
           setGeneralConfig((prev) =>
             prev.map((page) => ({
               ...page,
@@ -126,10 +142,33 @@ export default function App() {
           );
         }
 
-        // Respect local progress cache too. If no local cache exists, load from Supabase.
-        if (savedProgress && !hasLocalProgress) setAllProgress(savedProgress);
+        // Merge team progress: combine remote progress with local cache so we
+        // include other users' progress while preserving the user's local edits.
+        try {
+          const rawLocal = localStorage.getItem('team_album_progress');
+          const localProgress = rawLocal ? JSON.parse(rawLocal) : {};
+
+          if (savedProgress) {
+            // deep-merge per-user: remote base, local overrides for same user/cards
+            const merged = {};
+            const uids = new Set([...(Object.keys(savedProgress || {})), ...(Object.keys(localProgress || {}))]);
+            for (const uid of uids) {
+              merged[uid] = {
+                ...(savedProgress[uid] || {}),
+                ...(localProgress[uid] || {}),
+              };
+            }
+            setAllProgress(merged);
+          } else if (rawLocal) {
+            setAllProgress(localProgress);
+          }
+        } catch (err) {
+          console.warn('Error merging team progress', err);
+          if (savedProgress) setAllProgress(savedProgress);
+        }
       } catch (error) {
-        console.warn('No se pudo cargar Supabase; usando datos locales.', error.message);
+        console.warn('No se pudo cargar Supabase; usando datos locales.', error?.message || error);
+        setSupabaseError(error?.message || String(error));
       }
     }
 
@@ -521,6 +560,57 @@ export default function App() {
     }
   };
 
+  // Debug helper: fetch remote data and apply to UI immediately (ignores local cache)
+  const fetchAndApplyRemote = async () => {
+    try {
+      setSummaryStatus('Obteniendo datos remotos...');
+      const [cardRows, progressObj, usersRows] = await Promise.all([
+        loadGeneralCards(),
+        loadTeamProgress(),
+        loadUsers(),
+      ]);
+
+      console.debug('fetchAndApplyRemote - counts', {
+        cards: Array.isArray(cardRows) ? cardRows.length : 0,
+        progress: progressObj ? Object.keys(progressObj).length : 0,
+        users: Array.isArray(usersRows) ? usersRows.length : 0,
+      });
+
+      if (Array.isArray(usersRows) && usersRows.length > 0) setUsers(usersRows);
+
+      // Merge remote card fields into current UI config
+      if (Array.isArray(cardRows) && cardRows.length > 0) {
+        setGeneralConfig((prev) =>
+          prev.map((page) => ({
+            ...page,
+            cards: page.cards.map((card) => {
+              const row = cardRows.find((r) => r.id === card.id);
+              return row
+                ? {
+                    ...card,
+                    name: row.name,
+                    stars: row.stars,
+                    defaultFrame: row.default_frame,
+                  }
+                : card;
+            }),
+          }))
+        );
+      }
+
+      if (progressObj && Object.keys(progressObj).length > 0) {
+        setAllProgress(progressObj);
+      }
+
+      setSummaryStatus('Datos remotos aplicados.');
+      window.setTimeout(() => setSummaryStatus(''), 2500);
+    } catch (err) {
+      console.warn('Error al obtener/aplicar remoto', err);
+      setSummaryStatus('Error al obtener datos remotos. Revisa la consola.');
+      window.setTimeout(() => setSummaryStatus(''), 3000);
+    }
+  };
+
   const renderSetPagination = () => (
     <div className="rounded-2xl border border-green-200 bg-white p-3 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -572,6 +662,55 @@ export default function App() {
             title={`Set de ${set.setName}`}
           >
             {index + 1}
+          </button>
+        ))}
+      </div>
+      {/* Quick-fill buttons: carga rápida por página */}
+      <div className="mt-2 grid grid-cols-5 gap-2">
+        {generalConfig.map((set, index) => (
+          <button
+            key={`quick-${set.pageNumber}`}
+            type="button"
+            onClick={async () => {
+              if (!currentUser) {
+                setShowAuthModal(true);
+                return;
+              }
+              const confirmMsg = `Cargar rápidamente la página ${index + 1} a tu álbum? Esto marcará todas las cartas de la página como presentes.`;
+              if (!window.confirm(confirmMsg)) return;
+
+              try {
+                setBulkImportStatus(`Aplicando página ${index + 1}...`);
+                const cards = generalConfig[index]?.cards || [];
+                // Update local state immediately
+                setAllProgress((prev) => {
+                  const userState = { ...(prev[currentUser.uid] || {}) };
+                  cards.forEach((card) => {
+                    userState[card.id] = { count: 1 };
+                  });
+                  return { ...prev, [currentUser.uid]: userState };
+                });
+
+                // Persist to Supabase
+                await Promise.all(
+                  cards.map((card) => saveCardProgress(currentUser.uid, card.id, 1).catch((e) => { console.warn('Encolado/err saveCardProgress', e); }))
+                );
+
+                setBulkImportStatus(`Página ${index + 1} aplicada.`);
+                window.setTimeout(() => setBulkImportStatus(''), 2200);
+              } catch (err) {
+                console.warn('Error al aplicar carga rápida de página', err);
+                setBulkImportStatus('Error al aplicar la página. Revisa la consola.');
+                window.setTimeout(() => setBulkImportStatus(''), 4200);
+              }
+            }}
+            disabled={!currentUser}
+            className={`h-8 rounded-lg text-xs font-bold transition-colors ${
+              currentUser ? 'bg-blue-500 text-white hover:bg-blue-400' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+            title={`Cargar rápidamente la página ${index + 1}`}
+          >
+            Cargar
           </button>
         ))}
       </div>
@@ -733,6 +872,58 @@ export default function App() {
               Generar Texto Resumen
             </button>
             <button
+              onClick={async () => {
+                try {
+                  setSummaryStatus('Sincronizando álbum...');
+                  const results = await Promise.allSettled(allCards.map((card) => saveGeneralCard(card)));
+                  const failed = results.filter(r => r.status === 'rejected').length;
+                  if (failed === 0) setSummaryStatus('Álbum sincronizado correctamente.');
+                  else setSummaryStatus(`Sincronizado con ${failed} errores (se encolaron).`);
+                  // refresh pending count
+                  const raw = localStorage.getItem('tt_pending_updates');
+                  const list = raw ? JSON.parse(raw) : [];
+                  setPendingCount(Array.isArray(list) ? list.length : 0);
+                  window.setTimeout(() => setSummaryStatus(''), 3000);
+                } catch (err) {
+                  setSummaryStatus('Error al sincronizar.');
+                  window.setTimeout(() => setSummaryStatus(''), 3000);
+                }
+              }}
+              className="text-xs px-3 py-1.5 rounded-full font-bold transition-all bg-red-600 text-white hover:bg-red-500"
+            >
+              Sincronizar Álbum
+            </button>
+            {DEBUG_UI && (
+              <>
+                <button
+                  onClick={() => {
+                    const confirmMsg = 'Borrar la caché local (album_general_config y team_album_progress) y recargar para usar datos remotos?';
+                    if (!window.confirm(confirmMsg)) return;
+                    try {
+                      localStorage.removeItem('album_general_config');
+                      localStorage.removeItem('team_album_progress');
+                      // also clear pending updates so flush doesn't reapply local-only edits during test
+                      // keep a backup in case the user wants to restore
+                      const backup = localStorage.getItem('tt_pending_updates_backup');
+                      if (!backup) localStorage.setItem('tt_pending_updates_backup', localStorage.getItem('tt_pending_updates') || '[]');
+                    } catch (e) {
+                      console.warn('No se pudo limpiar la caché local.', e);
+                    }
+                    window.location.reload();
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-full font-bold transition-all bg-blue-600 text-white hover:bg-blue-500"
+                >
+                  Usar datos remotos
+                </button>
+                <button
+                  onClick={() => fetchAndApplyRemote()}
+                  className="text-xs px-3 py-1.5 rounded-full font-bold transition-all bg-blue-400 text-white hover:bg-blue-300"
+                >
+                  Forzar aplicar remoto
+                </button>
+              </>
+            )}
+            <button
               onClick={() => setDarkMode((v) => !v)}
               className="text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-md bg-white text-green-700 border border-green-300 hover:bg-green-50"
               title="Toggle dark mode"
@@ -763,6 +954,12 @@ export default function App() {
       {summaryStatus && (
         <div className="px-4 py-2 bg-emerald-100 text-emerald-700 text-xs font-semibold border-b border-emerald-200">
           {summaryStatus}
+        </div>
+      )}
+
+      {supabaseError && (
+        <div className="px-4 py-2 bg-red-100 text-red-700 text-xs font-semibold border-b border-red-200">
+          Error al cargar datos desde Supabase: {supabaseError}
         </div>
       )}
 
