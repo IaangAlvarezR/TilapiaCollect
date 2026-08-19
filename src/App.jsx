@@ -60,6 +60,7 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState('');
+  const [includeGoldInSummary, setIncludeGoldInSummary] = useState(true);
   const [bulkImportStatus, setBulkImportStatus] = useState('');
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -413,18 +414,26 @@ export default function App() {
           });
       };
 
-      const cardEntries = allCards.map((card) => ({ card, count: getCardCount(card) }));
+      const targetCards = includeGoldInSummary
+        ? allCards
+        : allCards.filter((card) => card.defaultFrame !== 'gold');
+
+      const cardEntries = targetCards.map((card) => ({ card, count: getCardCount(card) }));
       const duplicateEntries = cardEntries
         .filter((entry) => entry.count > 1)
         .map((entry) => ({ ...entry, quantity: entry.count - 1 }));
       const missingEntries = cardEntries
         .filter((entry) => entry.count === 0)
         .map((entry) => ({ ...entry, quantity: 1 }));
-      const collectedUniqueTotal = allCards.length - missingEntries.length;
+      const collectedUniqueTotal = allCards.reduce((sum, card) => {
+        const c = getCardCount(card);
+        return sum + (c > 0 ? 1 : 0);
+      }, 0);
       const uniquePercentage = allCards.length > 0 ? Math.round((collectedUniqueTotal / allCards.length) * 100) : 0;
 
       const summaryText = [
         '**Tilapia Tools**',
+        'https://tilapia-collect.vercel.app/',
         `Jugador: ${currentUser.name}`,
         `UID: ${currentUser.uid}`,
         '',
@@ -449,7 +458,11 @@ export default function App() {
       return;
     }
 
-    const duplicateEntries = allCards
+    const targetCards = includeGoldInSummary
+      ? allCards
+      : allCards.filter((card) => card.defaultFrame !== 'gold');
+
+    const duplicateEntries = targetCards
       .filter((card) => {
         const rawProgress = currentUserProgress[card.id];
         const progressType = card.defaultFrame === 'gold' ? 'goldCount' : 'basicCount';
@@ -466,9 +479,13 @@ export default function App() {
         return `${cardNumber} (${card.stars} ${starIcon})${raritySuffix}`;
       });
 
-    const summaryText = duplicateEntries.length > 0
-      ? `FT:\n${duplicateEntries.join('\n')}`
-      : 'No tienes cartas duplicadas.';
+    const summaryText = [
+      '**Tilapia Tools**',
+      'https://tilapia-collect.vercel.app/',
+      duplicateEntries.length > 0
+        ? `FT:\n${duplicateEntries.join('\n')}`
+        : 'No tienes cartas duplicadas.'
+    ].join('\n');
 
     try {
       await navigator.clipboard.writeText(summaryText);
@@ -485,12 +502,22 @@ export default function App() {
     <div className="min-h-screen bg-green-50 text-green-900 flex flex-col font-sans max-w-xl mx-auto border-x border-green-200 shadow-2xl">
       
       <header ref={headerRef} className="p-4 pt-6 bg-green-100 border-b border-green-200 sticky top-0 z-30">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
           <h1 className="text-xl font-black text-green-800">
             {ALBUM_CONFIG.title}
           </h1>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-green-800 cursor-pointer select-none bg-white/80 px-2.5 py-1.5 rounded-full border border-green-300 shadow-sm hover:bg-white transition-all">
+              <input
+                type="checkbox"
+                checked={includeGoldInSummary}
+                onChange={(e) => setIncludeGoldInSummary(e.target.checked)}
+                className="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 h-3.5 w-3.5 cursor-pointer"
+              />
+              <span>Incluir Gold</span>
+            </label>
+
             <button
               onClick={handleGenerateSummary}
               disabled={!currentUser}

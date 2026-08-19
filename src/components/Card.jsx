@@ -33,17 +33,17 @@ export function Card({
         }`}
       >
         <div className="relative z-10 flex flex-col justify-between h-full p-1 rounded-lg">
-          {/* Número global de 1 a 135 */}
-          <div className="flex justify-between items-start w-full">
-            <span className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded border ${
-              hasCard ? 'text-gray-800 bg-white/70 border-gray-300/50' : 'text-green-700 bg-green-100/70 border-green-200'
-            }`}>
-              #{String(globalCardNumber).padStart(3, '0')}
-            </span>
-            <div className={`text-[10px] tracking-wider rounded-md px-1 py-0.5 truncate max-w-[4rem] text-left ${
-              hasCard ? 'text-yellow-500 bg-white/70 drop-shadow-sm' : 'text-gray-400 bg-green-100/70'
-            }`}>
-              <span className="inline-block align-middle truncate">{renderStars(cardData.stars)}</span>
+          {/* Estrellas */}
+          <div className="flex justify-center items-center w-full">
+            <div className="flex items-center gap-1 bg-amber-50/95 border border-amber-300/90 px-2.5 py-0.5 rounded-full shadow-sm">
+              <span className="text-xs font-black text-amber-900 leading-none">
+                {cardData.stars}
+              </span>
+              <div className="flex text-amber-500 text-xs leading-none">
+                {Array.from({ length: cardData.stars || 1 }).map((_, i) => (
+                  <span key={i} className="text-amber-500 drop-shadow-sm">★</span>
+                ))}
+              </div>
             </div>
           </div>
           
