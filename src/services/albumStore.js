@@ -31,7 +31,10 @@ export async function loadGeneralCards() {
 export async function saveGeneralCard(card) {
   const { error } = await supabase.from('general_cards').upsert(toCardRow(card))
 
-  if (error) throw error
+  if (error) {
+    enqueuePendingUpdate({ type: 'general_card', payload: toCardRow(card) })
+    throw error
+  }
 }
 
 export async function loadTeamProgress() {
@@ -53,7 +56,69 @@ export async function saveCardProgress(userId, cardId, count) {
     .from('player_progress')
     .upsert(toProgressRow(userId, cardId, count), { onConflict: 'user_id,card_id' })
 
-  if (error) throw error
+  if (error) {
+    enqueuePendingUpdate({ type: 'progress', payload: toProgressRow(userId, cardId, count) })
+    throw error
+  }
+}
+
+// Pending updates queue stored in localStorage for retry
+const PENDING_KEY = 'tt_pending_updates'
+
+function readPending() {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function writePending(list) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(list))
+  } catch {
+    // ignore
+  }
+}
+
+export function enqueuePendingUpdate(item) {
+  try {
+    const list = readPending()
+    list.push({ ...item, createdAt: Date.now() })
+    writePending(list)
+  } catch {
+    // ignore
+  }
+}
+
+export async function flushPendingUpdates() {
+  const list = readPending()
+  if (!list.length) return
+
+  const remaining = []
+
+  for (const item of list) {
+    try {
+      if (item.type === 'general_card') {
+        const { error } = await supabase.from('general_cards').upsert(item.payload)
+        if (error) throw error
+      } else if (item.type === 'progress') {
+        const { error } = await supabase
+          .from('player_progress')
+          .upsert(item.payload, { onConflict: 'user_id,card_id' })
+        if (error) throw error
+      } else if (item.type === 'admin_entry') {
+        const { error } = await supabase.from('admin_board_entries').upsert(item.payload)
+        if (error) throw error
+      }
+      // success -> skip
+    } catch (err) {
+      remaining.push(item)
+    }
+  }
+
+  writePending(remaining)
 }
 
 // Usuarios
@@ -141,7 +206,10 @@ export async function saveAdminBoardEntry(entry, groupCode) {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    enqueuePendingUpdate({ type: 'admin_entry', payload })
+    throw error
+  }
 
   return data
 }

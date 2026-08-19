@@ -11,6 +11,7 @@ import {
   saveCardProgress,
   saveGeneralCard,
   loadUsers,
+  flushPendingUpdates,
 } from './services/albumStore';
 
 const normalizeGeneralConfig = (pages = []) =>
@@ -59,6 +60,7 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState('');
+  const [pendingCount, setPendingCount] = useState(0);
   const [selectedAutoFillOptions, setSelectedAutoFillOptions] = useState([]);
   const [bulkImportStatus, setBulkImportStatus] = useState('');
   const [isBulkImporting, setIsBulkImporting] = useState(false);
@@ -133,8 +135,28 @@ export default function App() {
 
     loadAlbumFromSupabase();
 
+    // Try to flush any pending updates (from previous failed writes)
+    flushPendingUpdates().catch(() => {});
+
+    const onlineHandler = () => flushPendingUpdates().catch(() => {});
+    const updatePending = () => {
+      try {
+        const raw = localStorage.getItem('tt_pending_updates');
+        const list = raw ? JSON.parse(raw) : [];
+        setPendingCount(Array.isArray(list) ? list.length : 0);
+      } catch {
+        setPendingCount(0);
+      }
+    };
+
+    updatePending();
+    window.addEventListener('storage', updatePending);
+    window.addEventListener('online', onlineHandler);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('online', onlineHandler);
+      window.removeEventListener('storage', updatePending);
     };
   }, []);
 
@@ -682,6 +704,23 @@ export default function App() {
           </h1>
 
           <div className="flex items-center gap-2">
+            {pendingCount > 0 && (
+              <div className="text-xs px-3 py-1.5 rounded-full font-bold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                {pendingCount} cambios pendientes
+                <button
+                  onClick={() => {
+                    flushPendingUpdates().then(() => {
+                      const raw = localStorage.getItem('tt_pending_updates');
+                      const list = raw ? JSON.parse(raw) : [];
+                      setPendingCount(Array.isArray(list) ? list.length : 0);
+                    }).catch(() => {});
+                  }}
+                  className="ml-2 underline text-[10px]"
+                >
+                  Sincronizar
+                </button>
+              </div>
+            )}
             <button
               onClick={handleGenerateSummary}
               disabled={!currentUser}
