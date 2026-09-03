@@ -83,13 +83,19 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
   }, [fetchEntries]);
 
   // Si es vista global, deduplicar por UID quedándonos únicamente con el del promedio más alto
+  // y excluir la lista personal del usuario Vaiu
   const processedEntries = useMemo(() => {
     if (!isGlobalView) {
       return rawEntries;
     }
 
+    const VAIU_IDENTIFIERS = ['10589616', 'vaiu'];
+
     const uidMap = new Map();
     for (const entry of rawEntries) {
+      const entryGroup = String(entry.group_code || '').trim().toLowerCase();
+      if (VAIU_IDENTIFIERS.includes(entryGroup)) continue;
+
       const uid = String(entry.uid || '').trim();
       if (!uid) continue;
 
@@ -472,6 +478,18 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
             </form>
           )}
 
+          {/* Leyenda de colores / escala de calidad */}
+          <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 bg-white rounded-xl border border-green-200 text-[10px] sm:text-[11px] font-bold shadow-sm">
+            <span className="text-green-800 font-black">Calidad:</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="cozy-blue">🔵 &gt;220 (Mejor)</span>
+              <span className="cozy-green">🟢 200-220</span>
+              <span className="cozy-yellow">🟡 180-199</span>
+              <span className="cozy-orange">🟠 150-179</span>
+              <span className="cozy-red">🔴 &lt;150 (Peor)</span>
+            </div>
+          </div>
+
           {/* Tabla de registros con scroll horizontal responsivo y tamaños compactos */}
           <div className="w-full overflow-x-auto rounded-xl border border-green-200 shadow-sm bg-white">
             <table className="w-full min-w-[360px] divide-y divide-green-200 text-left text-[11px] sm:text-xs">
@@ -560,13 +578,17 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                         {stats.map((value, index) => (
                           <td
                             key={`${entry.id || entry.uid}-${index}`}
-                            className={`px-0.5 sm:px-1.5 py-1.5 text-center text-[11px] sm:text-xs ${getStatClass(value)}`}
+                            className="px-0.5 sm:px-1 py-1.5 text-center text-[11px] sm:text-xs"
                           >
-                            {value}
+                            <span className={`inline-block min-w-[26px] ${getStatClass(value)}`}>
+                              {value}
+                            </span>
                           </td>
                         ))}
-                        <td className={`px-1 sm:px-2 py-1.5 text-center text-[11px] sm:text-xs ${avgClass}`}>
-                          {average}
+                        <td className="px-1 sm:px-1.5 py-1.5 text-center text-[11px] sm:text-xs">
+                          <span className={`inline-block min-w-[32px] ${avgClass}`}>
+                            {average}
+                          </span>
                         </td>
                         <td className="px-1.5 sm:px-2 py-1.5 text-center whitespace-nowrap">
                           {isGlobalView ? (

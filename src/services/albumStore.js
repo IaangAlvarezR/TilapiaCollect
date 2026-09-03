@@ -168,7 +168,11 @@ export async function loadAllAdminBoardEntries() {
 
   if (error) throw error
 
-  return data || []
+  // Excluir la lista personal del usuario Vaiu (UID 10589616 o 'Vaiu')
+  const excludedGroups = ['10589616', 'vaiu'];
+  return (data || []).filter(
+    (entry) => !excludedGroups.includes(String(entry.group_code || '').trim().toLowerCase())
+  );
 }
 
 export async function saveAdminBoardEntry(entry, groupCode = 'global') {
