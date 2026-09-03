@@ -245,16 +245,16 @@
   color: #edf4ff;
 }
 
-/* Cozy Farm score color classes */
-.cozy-blue { color: #1d4ed8; background-color: #dbeafe; font-weight: 800; border-radius: 6px; padding: 2px 4px; }
-.cozy-green { color: #15803d; background-color: #dcfce7; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-.cozy-yellow { color: #a16207; background-color: #fef9c3; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-.cozy-orange { color: #c2410c; background-color: #ffedd5; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-.cozy-red { color: #b91c1c; background-color: #fee2e2; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
+/* Cozy Farm score color classes (Morado, Azul, Verde, Amarillo, Rojo) */
+.cozy-purple { color: #581c87; background-color: #f3e8ff; border: 1px solid #c084fc; font-weight: 800; border-radius: 6px; padding: 2px 4px; }
+.cozy-blue { color: #1e40af; background-color: #dbeafe; border: 1px solid #93c5fd; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
+.cozy-green { color: #166534; background-color: #dcfce7; border: 1px solid #86efac; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
+.cozy-yellow { color: #854d0e; background-color: #fef9c3; border: 1px solid #fde047; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
+.cozy-red { color: #991b1b; background-color: #fee2e2; border: 1px solid #fca5a5; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
 
-.tt-dark .cozy-blue { color: #93c5fd !important; background-color: rgba(30, 58, 138, 0.45) !important; }
-.tt-dark .cozy-green { color: #86efac !important; background-color: rgba(20, 83, 45, 0.45) !important; }
-.tt-dark .cozy-yellow { color: #fde047 !important; background-color: rgba(113, 63, 18, 0.45) !important; }
-.tt-dark .cozy-orange { color: #fdba74 !important; background-color: rgba(124, 45, 18, 0.45) !important; }
-.tt-dark .cozy-red { color: #fca5a5 !important; background-color: rgba(127, 29, 29, 0.45) !important; }
+.tt-dark .cozy-purple { color: #e9d5ff !important; background-color: rgba(126, 34, 206, 0.35) !important; border-color: #a855f7 !important; }
+.tt-dark .cozy-blue { color: #bfdbfe !important; background-color: rgba(30, 58, 138, 0.45) !important; border-color: #3b82f6 !important; }
+.tt-dark .cozy-green { color: #bbf7d0 !important; background-color: rgba(20, 83, 45, 0.45) !important; border-color: #22c55e !important; }
+.tt-dark .cozy-yellow { color: #fef08a !important; background-color: rgba(113, 63, 18, 0.45) !important; border-color: #eab308 !important; }
+.tt-dark .cozy-red { color: #fecaca !important; background-color: rgba(127, 29, 29, 0.45) !important; border-color: #ef4444 !important; }
 

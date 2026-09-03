@@ -241,19 +241,19 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
     setSortConfig({ key, direction });
   };
 
-  // Escala de colores solicitada:
-  // > 220: Azul
-  // 200 a 220: Verde
-  // 180 a 199: Amarillo
-  // 150 a 180: Naranja (150 <= val < 180)
-  // < 150 (100 a 150 o menor): Rojo
+  // Escala de colores (Rojo, Amarillo, Verde, Azul, Morado):
+  // > 220: Morado (Mejor)
+  // 200 a 220: Azul
+  // 180 a 199: Verde
+  // 150 a 179: Amarillo
+  // < 150: Rojo (Peor)
   const getStatClass = (value) => {
     const num = Number(value || 0);
-    if (num > 220) return 'cozy-blue font-black';
-    if (num >= 200) return 'cozy-green font-bold';
-    if (num >= 180) return 'cozy-yellow font-bold';
-    if (num >= 150) return 'cozy-orange font-semibold';
-    return 'cozy-red font-semibold';
+    if (num > 220) return 'cozy-purple';
+    if (num >= 200) return 'cozy-blue';
+    if (num >= 180) return 'cozy-green';
+    if (num >= 150) return 'cozy-yellow';
+    return 'cozy-red';
   };
 
   const copyUidFast = async (uid) => {
@@ -482,10 +482,10 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
           <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 bg-white rounded-xl border border-green-200 text-[10px] sm:text-[11px] font-bold shadow-sm">
             <span className="text-green-800 font-black">Calidad:</span>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="cozy-blue">🔵 &gt;220 (Mejor)</span>
-              <span className="cozy-green">🟢 200-220</span>
-              <span className="cozy-yellow">🟡 180-199</span>
-              <span className="cozy-orange">🟠 150-179</span>
+              <span className="cozy-purple">🟣 &gt;220 (Mejor)</span>
+              <span className="cozy-blue">🔵 200-220</span>
+              <span className="cozy-green">🟢 180-199</span>
+              <span className="cozy-yellow">🟡 150-179</span>
               <span className="cozy-red">🔴 &lt;150 (Peor)</span>
             </div>
           </div>
