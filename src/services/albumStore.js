@@ -143,7 +143,24 @@ export async function registerUser(uid, name, pin) {
   return data
 }
 
-export async function loadAdminBoardEntries() {
+export async function loadAdminBoardEntries(userUid) {
+  let query = supabase
+    .from('admin_board_entries')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (userUid) {
+    query = query.or(`group_code.eq.${userUid},uid.eq.${userUid}`)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+
+  return data || []
+}
+
+export async function loadAllAdminBoardEntries() {
   const { data, error } = await supabase
     .from('admin_board_entries')
     .select('*')
@@ -154,26 +171,40 @@ export async function loadAdminBoardEntries() {
   return data || []
 }
 
-export async function loadAllAdminBoardEntries() {
-  return loadAdminBoardEntries()
-}
-
-export async function saveAdminBoardEntry(entry) {
+export async function saveAdminBoardEntry(entry, groupCode = 'global') {
   const payload = {
     id: entry.id || undefined,
     uid: entry.uid,
+    group_code: groupCode || 'global',
     stat0: entry.stat0 ?? 0,
     stat1: entry.stat1 ?? 0,
     stat2: entry.stat2 ?? 0,
     stat3: entry.stat3 ?? 0,
     stat4: entry.stat4 ?? 0,
+    stat5: entry.stat5 ?? 0,
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('admin_board_entries')
-    .upsert(payload, { onConflict: 'uid' })
+    .upsert(payload, { onConflict: 'uid,group_code' })
     .select()
     .single()
+
+  // Fallback si la columna stat5 aún no se ha creado en la base de datos de Supabase
+  if (error && (error.code === 'PGRST204' || String(error.message).includes('stat5'))) {
+    console.warn(
+      "Aviso: La columna 'stat5' aún no existe en Supabase. Ejecuta: alter table public.admin_board_entries add column if not exists stat5 integer default 0;"
+    )
+    const { stat5, ...fallbackPayload } = payload
+    const retry = await supabase
+      .from('admin_board_entries')
+      .upsert(fallbackPayload, { onConflict: 'uid,group_code' })
+      .select()
+      .single()
+
+    if (retry.error) throw retry.error
+    return { ...retry.data, stat5: entry.stat5 ?? 0 }
+  }
 
   if (error) throw error
 

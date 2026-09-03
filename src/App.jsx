@@ -683,7 +683,11 @@ export default function App() {
           </section>
 
 
-          <AdminBoard isAdmin={isGeneralMode} />
+          <AdminBoard
+            currentUser={currentUser}
+            isGeneralMode={isGeneralMode}
+            onOpenAuth={() => setShowAuthModal(true)}
+          />
         </div>
       </section>
 

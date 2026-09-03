@@ -246,14 +246,14 @@
 }
 
 /* Cozy Farm score color classes */
-.cozy-100 { color: #2563eb; }
-.cozy-90 { color: #059669; }
-.cozy-80 { color: #d97706; }
-.cozy-70 { color: #d97706; }
-.cozy-below { color: #dc2626; }
+.cozy-blue { color: #1d4ed8; font-weight: 800; }
+.cozy-green { color: #15803d; font-weight: 700; }
+.cozy-yellow { color: #b45309; font-weight: 700; }
+.cozy-orange { color: #c2410c; font-weight: 600; }
+.cozy-red { color: #dc2626; font-weight: 600; }
 
-.tt-dark .cozy-100 { color: #8fbfff !important; }
-.tt-dark .cozy-90 { color: #75d99a !important; }
-.tt-dark .cozy-80 { color: #f5c76b !important; }
-.tt-dark .cozy-70 { color: #e8a94d !important; }
-.tt-dark .cozy-below { color: #ff8f8f !important; }
+.tt-dark .cozy-blue { color: #60a5fa !important; }
+.tt-dark .cozy-green { color: #4ade80 !important; }
+.tt-dark .cozy-yellow { color: #facc15 !important; }
+.tt-dark .cozy-orange { color: #fb923c !important; }
+.tt-dark .cozy-red { color: #f87171 !important; }

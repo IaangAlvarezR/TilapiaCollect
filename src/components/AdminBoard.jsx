@@ -1,5 +1,11 @@
-import { useEffect, useState } from 'react';
-import { deleteAdminBoardEntry, deleteAdminBoardEntriesByUid, loadAdminBoardEntries, loadAllAdminBoardEntries, saveAdminBoardEntry } from '../services/albumStore';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  deleteAdminBoardEntry,
+  deleteAdminBoardEntriesByUid,
+  loadAdminBoardEntries,
+  loadAllAdminBoardEntries,
+  saveAdminBoardEntry,
+} from '../services/albumStore';
 
 const emptyForm = {
   uid: '',
@@ -8,100 +14,171 @@ const emptyForm = {
   stat2: '0',
   stat3: '0',
   stat4: '0',
+  stat5: '0',
 };
 
-export function AdminBoard({ currentUser }) {
-  const [entries, setEntries] = useState([]);
+const STAT_CONFIG = [
+  { key: 'stat0', emoji: '🐸', name: 'Rana' },
+  { key: 'stat1', emoji: '🐼', name: 'Panda' },
+  { key: 'stat2', emoji: '💧', name: 'Gota' },
+  { key: 'stat3', emoji: '🦈', name: 'Tiburón' },
+  { key: 'stat4', emoji: '🦉', name: 'Búho' },
+  { key: 'stat5', emoji: '🦇', name: 'Murciélago' },
+];
+
+export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
+  const [rawEntries, setRawEntries] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
-  const [currentGroupCode, setCurrentGroupCode] = useState(() => localStorage.getItem('cozy_group_code') || '');
-  const [createdCode, setCreatedCode] = useState(() => localStorage.getItem('cozy_created_code') || '');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
+  const [isGlobalView, setIsGlobalView] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: 'prom', direction: 'desc' });
 
-  useEffect(() => {
-    if (currentGroupCode) {
-      localStorage.setItem('cozy_group_code', currentGroupCode);
-    } else {
-      localStorage.removeItem('cozy_group_code');
+  const isAdmin = Boolean(currentUser?.is_admin || isGeneralMode);
+
+  const [copiedUid, setCopiedUid] = useState(null);
+
+  const getStatsArray = (entry) => [
+    entry.stat0 ?? 0,
+    entry.stat1 ?? 0,
+    entry.stat2 ?? 0,
+    entry.stat3 ?? 0,
+    entry.stat4 ?? 0,
+    entry.stat5 ?? 0,
+  ];
+
+  const getAverage = (entry) => {
+    const stats = getStatsArray(entry);
+    return stats.reduce((sum, value) => sum + value, 0) / stats.length;
+  };
+
+  const fetchEntries = useCallback(async () => {
+    if (!currentUser) {
+      setRawEntries([]);
+      return;
     }
-  }, [currentGroupCode]);
+
+    setIsLoading(true);
+    try {
+      if (isGlobalView && isAdmin) {
+        const data = await loadAllAdminBoardEntries();
+        setRawEntries(data || []);
+      } else {
+        const data = await loadAdminBoardEntries(currentUser.uid);
+        setRawEntries(data || []);
+      }
+    } catch (error) {
+      console.error('Error cargando registros Cozy Farm:', error);
+      setStatus('No se pudieron cargar los registros de Cozy Farm.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser, isGlobalView, isAdmin]);
 
   useEffect(() => {
-    if (!currentUser || !currentGroupCode) return;
+    fetchEntries();
+  }, [fetchEntries]);
 
-    let isMounted = true;
+  // Si es vista global, deduplicar por UID quedándonos únicamente con el del promedio más alto
+  const processedEntries = useMemo(() => {
+    if (!isGlobalView) {
+      return rawEntries;
+    }
 
-    const loadEntries = async () => {
-      try {
-        let data = [];
-        if (currentGroupCode === '0001' && currentUser?.is_admin) {
-          data = await loadAllAdminBoardEntries();
-          // Filter to unique UIDs
-          const uniqueData = [];
-          const seen = new Set();
-          for (const item of data) {
-            if (!seen.has(item.uid)) {
-              seen.add(item.uid);
-              uniqueData.push(item);
-            }
-          }
-          data = uniqueData;
-        } else {
-          data = await loadAdminBoardEntries(currentGroupCode);
-        }
-        if (isMounted) setEntries(data);
-      } catch (error) {
-        if (isMounted) {
-          setStatus('No se pudo cargar la tabla compartida.');
-        }
+    const uidMap = new Map();
+    for (const entry of rawEntries) {
+      const uid = String(entry.uid || '').trim();
+      if (!uid) continue;
+
+      const avg = getAverage(entry);
+      const existing = uidMap.get(uid);
+
+      if (!existing || avg > existing._avg) {
+        uidMap.set(uid, { ...entry, _avg: avg });
       }
-    };
+    }
 
-    loadEntries();
+    return Array.from(uidMap.values());
+  }, [rawEntries, isGlobalView]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser, currentGroupCode]);
+  const sortedEntries = useMemo(() => {
+    return [...processedEntries].sort((a, b) => {
+      if (!sortConfig.key) return 0;
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+      if (sortConfig.key === 'prom') {
+        aValue = getAverage(a);
+        bValue = getAverage(b);
+      }
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [processedEntries, sortConfig]);
 
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
   };
 
+  const sanitizeStat = (val) => {
+    const num = Number(val || 0);
+    if (isNaN(num)) return 0;
+    return Math.max(0, Math.min(999, Math.round(num)));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.uid.trim()) return;
+    const targetUid = form.uid.trim();
+    if (!targetUid) {
+      setStatus('Por favor ingresa un UID.');
+      return;
+    }
+
+    // Regla 1: Solo un registro por UID en el listado personal.
+    // Si ya existe un registro con este UID y no se estaba editando ese mismo ID, se vincula para sobreescribir.
+    const existingEntry = rawEntries.find(
+      (item) => String(item.uid).trim() === targetUid && item.id !== editingId
+    );
+
+    const targetId = editingId || existingEntry?.id || undefined;
 
     setIsSaving(true);
+    setStatus('');
 
     try {
       const payload = {
-        id: editingId,
-        uid: form.uid.trim(),
-        stat0: Number(form.stat0 || 0),
-        stat1: Number(form.stat1 || 0),
-        stat2: Number(form.stat2 || 0),
-        stat3: Number(form.stat3 || 0),
-        stat4: Number(form.stat4 || 0),
+        id: targetId,
+        uid: targetUid,
+        stat0: sanitizeStat(form.stat0),
+        stat1: sanitizeStat(form.stat1),
+        stat2: sanitizeStat(form.stat2),
+        stat3: sanitizeStat(form.stat3),
+        stat4: sanitizeStat(form.stat4),
+        stat5: sanitizeStat(form.stat5),
       };
 
-      const savedEntry = await saveAdminBoardEntry(payload, currentGroupCode);
+      const userGroup = currentUser.uid;
+      const savedEntry = await saveAdminBoardEntry(payload, userGroup);
 
-      setEntries((prev) => {
-        const exists = prev.some((item) => item.id === savedEntry.id);
-        return exists
-          ? prev.map((item) => (item.id === savedEntry.id ? savedEntry : item))
-          : [savedEntry, ...prev];
-      });
+      // Garantizar que no haya duplicados de UID en el estado
+      setRawEntries((prev) => [
+        savedEntry,
+        ...prev.filter((item) => item.id !== savedEntry.id && String(item.uid).trim() !== targetUid),
+      ]);
 
-      setStatus(editingId ? 'Registro actualizado correctamente.' : 'Registro guardado correctamente.');
+      setStatus(
+        editingId || existingEntry
+          ? `Registro del UID ${targetUid} actualizado correctamente.`
+          : `Registro del UID ${targetUid} guardado correctamente.`
+      );
       resetForm();
     } catch (error) {
+      console.error('Error guardando registro:', error);
       setStatus('No se pudo guardar el registro.');
     } finally {
       setIsSaving(false);
@@ -117,39 +194,38 @@ export function AdminBoard({ currentUser }) {
       stat2: String(entry.stat2 ?? 0),
       stat3: String(entry.stat3 ?? 0),
       stat4: String(entry.stat4 ?? 0),
+      stat5: String(entry.stat5 ?? 0),
     });
+    setStatus(`Editando registro del UID ${entry.uid}`);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (entry) => {
+    const isGlobal = isGlobalView;
+    const confirmDelete = window.confirm(
+      isGlobal
+        ? `¿Eliminar permanentemente el registro del UID ${entry.uid} de la base de datos?`
+        : `¿Seguro que deseas eliminar este registro (UID: ${entry.uid})?`
+    );
+    if (!confirmDelete) return;
+
     try {
-      await deleteAdminBoardEntry(id);
-      setEntries((prev) => prev.filter((entry) => entry.id !== id));
-      if (editingId === id) resetForm();
-      setStatus('Registro eliminado.');
+      if (entry.id) {
+        await deleteAdminBoardEntry(entry.id);
+      } else if (entry.uid) {
+        await deleteAdminBoardEntriesByUid(entry.uid);
+      }
+
+      setRawEntries((prev) =>
+        prev.filter((item) => (entry.id ? item.id !== entry.id : item.uid !== entry.uid))
+      );
+
+      if (editingId === entry.id) resetForm();
+      setStatus(`Registro del UID ${entry.uid} eliminado correctamente.`);
     } catch (error) {
+      console.error('Error eliminando registro:', error);
       setStatus('No se pudo eliminar el registro.');
     }
   };
-
-  if (!currentUser) return null;
-
-  const getAverage = (entry) => {
-    const stats = [entry.stat0 ?? 0, entry.stat1 ?? 0, entry.stat2 ?? 0, entry.stat3 ?? 0, entry.stat4 ?? 0];
-    return stats.reduce((sum, value) => sum + value, 0) / stats.length;
-  };
-
-  const sortedEntries = [...entries].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    let aValue = a[sortConfig.key];
-    let bValue = b[sortConfig.key];
-    if (sortConfig.key === 'prom') {
-      aValue = getAverage(a);
-      bValue = getAverage(b);
-    }
-    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-    return 0;
-  });
 
   const requestSort = (key) => {
     let direction = 'desc';
@@ -159,297 +235,366 @@ export function AdminBoard({ currentUser }) {
     setSortConfig({ key, direction });
   };
 
+  // Escala de colores solicitada:
+  // > 220: Azul
+  // 200 a 220: Verde
+  // 180 a 199: Amarillo
+  // 150 a 180: Naranja (150 <= val < 180)
+  // < 150 (100 a 150 o menor): Rojo
+  const getStatClass = (value) => {
+    const num = Number(value || 0);
+    if (num > 220) return 'cozy-blue font-black';
+    if (num >= 200) return 'cozy-green font-bold';
+    if (num >= 180) return 'cozy-yellow font-bold';
+    if (num >= 150) return 'cozy-orange font-semibold';
+    return 'cozy-red font-semibold';
+  };
+
+  const copyUidFast = async (uid) => {
+    try {
+      await navigator.clipboard.writeText(uid);
+      setCopiedUid(uid);
+      setTimeout(() => setCopiedUid((prev) => (prev === uid ? null : prev)), 1400);
+    } catch (err) {
+      console.warn('No se pudo copiar el UID', err);
+    }
+  };
+
+  const copyAllUids = async () => {
+    if (sortedEntries.length === 0) return;
+    const uids = sortedEntries.map((e) => e.uid).join('\n');
+    try {
+      await navigator.clipboard.writeText(uids);
+      setStatus(`📋 ¡${sortedEntries.length} UIDs copiados al portapapeles!`);
+      setTimeout(() => setStatus(''), 2500);
+    } catch (err) {
+      console.warn('No se pudieron copiar los UIDs', err);
+    }
+  };
+
+  if (!currentUser) {
+    return (
+      <section className="mb-4 rounded-2xl border border-green-200 bg-white p-3 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="flex w-full items-center justify-between rounded-xl bg-green-100 hover:bg-green-200/80 px-3.5 py-2.5 text-left border border-green-200 transition"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-black uppercase text-white">
+              Cozy Farm
+            </span>
+            <div>
+              <h2 className="text-sm font-black text-green-900">🌾 Cozy Farm</h2>
+              <p className="text-[11px] text-green-700">Registro de progreso individual.</p>
+            </div>
+          </div>
+          <span className="text-xl font-black text-green-800">{isOpen ? '−' : '+'}</span>
+        </button>
+
+        {isOpen && (
+          <div className="mt-3 p-4 bg-green-50/70 rounded-xl border border-green-200 text-center">
+            <p className="text-sm font-bold text-green-900 mb-1">
+              🔒 Inicia sesión para registrar tu progreso de Cozy Farm
+            </p>
+            <p className="text-xs text-green-700 mb-3.5">
+              Podrás llevar el control de tus estadísticas de animales (🐸, 🐼, 💧, 🦈, 🦉, 🦇) de forma individual.
+            </p>
+            {onOpenAuth && (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="bg-green-600 hover:bg-green-500 text-white font-black py-2 px-4 rounded-xl shadow-sm transition text-xs"
+              >
+                Iniciar Sesión
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   return (
-    <section className="mb-4 rounded-3xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-lime-50 to-white p-3 shadow-lg ring-4 ring-emerald-100">
+    <section className="mb-4 rounded-2xl border border-green-200 bg-white p-3 shadow-sm">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-2xl border border-emerald-400 bg-gradient-to-r from-emerald-600 to-lime-500 px-4 py-3 text-left shadow-md transition hover:brightness-105"
+        className="flex w-full items-center justify-between rounded-xl bg-green-100 hover:bg-green-200/80 px-3.5 py-2.5 text-left border border-green-200 transition"
       >
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-50">
-            Destacado
+        <div className="flex items-center gap-2.5">
+          <span className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-black uppercase text-white">
+            Cozy Farm
           </span>
           <div>
-            <h2 className="text-base font-black text-white">Cozy Farm</h2>
-            <p className="text-[11px] text-emerald-50/90">Tabla compartida para editar en conjunto.</p>
+            <h2 className="text-sm font-black text-green-900">🌾 Cozy Farm</h2>
+            <p className="text-[11px] text-green-700">
+              {isGlobalView
+                ? 'Vista Global de Jugadores (Promedio más alto por UID)'
+                : 'Registro de progreso individual'}
+            </p>
           </div>
         </div>
-        <span className="text-2xl font-black text-white">{isOpen ? '−' : '+'}</span>
+        <span className="text-xl font-black text-green-800">{isOpen ? '−' : '+'}</span>
       </button>
 
-      {isOpen && !currentGroupCode && (
-        <div className="mt-3 p-4 bg-green-50 rounded-2xl border border-green-200 text-center">
-          <p className="text-sm font-semibold text-green-800 mb-4">Crea o únete a una lista colaborativa.</p>
-          <div className="flex flex-col gap-3 max-w-xs mx-auto">
-            <button 
-              onClick={() => {
-                const existing = localStorage.getItem('cozy_created_code');
-                if (existing) {
-                  const createNew = window.confirm(
-                    `Ya tienes una lista creada (${existing}).\nAceptar = crear una nueva lista reemplazando la anterior.\nCancelar = usar la existente.`
-                  );
-                  if (!createNew) {
-                    setCurrentGroupCode(existing);
-                    setEntries([]);
-                    return;
-                  }
-                  // If user confirmed, fall through to create a new code and overwrite stored one
-                }
-
-                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-                localStorage.setItem('cozy_created_code', code);
-                setCreatedCode(code);
-                setCurrentGroupCode(code);
-                setEntries([]);
-              }}
-              className="bg-green-600 text-white font-black py-2 px-4 rounded-xl shadow-sm hover:bg-green-500"
-            >
-              Crear nueva lista
-            </button>
-            { !currentGroupCode && createdCode && (
+      {isOpen && (
+        <div className="mt-3 space-y-3">
+          {/* Barra superior de controles y toggle de Admin */}
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-green-100/70 p-2 rounded-xl border border-green-200">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {isGlobalView && (
+                <span className="text-xs font-bold bg-white px-2 py-1 rounded-lg text-green-900 border border-green-200 shadow-sm">
+                  🌐 {sortedEntries.length} jugadores
+                </span>
+              )}
               <button
-                onClick={() => {
-                  setCurrentGroupCode(createdCode);
-                  setEntries([]);
-                }}
-                className="mt-2 bg-white text-green-800 font-bold py-2 px-4 rounded-xl border border-green-200 hover:bg-green-50"
+                type="button"
+                onClick={fetchEntries}
+                disabled={isLoading}
+                className="rounded-lg bg-white hover:bg-green-50 px-2 py-1 text-[11px] font-bold text-green-800 border border-green-200 transition flex items-center gap-1"
+                title="Recargar registros"
               >
-                Reabrir mi lista ({createdCode})
+                <span>{isLoading ? '⏳' : '🔄'}</span>
+                <span>Recargar</span>
+              </button>
+
+              {sortedEntries.length > 0 && (
+                <button
+                  type="button"
+                  onClick={copyAllUids}
+                  className="rounded-lg bg-white hover:bg-green-50 px-2 py-1 text-[11px] font-bold text-green-800 border border-green-200 transition flex items-center gap-1 shadow-sm"
+                  title="Copiar todos los UIDs de la tabla"
+                >
+                  <span>📋</span>
+                  <span>Copiar UIDs</span>
+                </button>
+              )}
+            </div>
+
+            {/* Botón exclusivo para Administradores */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsGlobalView((prev) => !prev);
+                  resetForm();
+                }}
+                className={`text-xs px-3 py-1.5 rounded-lg font-black transition border shadow-sm flex items-center gap-1.5 ${
+                  isGlobalView
+                    ? 'bg-green-600 text-white border-green-700 hover:bg-green-500'
+                    : 'bg-white text-green-800 border-green-300 hover:bg-green-50'
+                }`}
+                title={isGlobalView ? 'Volver a mi listado personal' : 'Ver listado global de todos los jugadores'}
+              >
+                <span>{isGlobalView ? '🌱 Mi Lista' : '🌐 Global'}</span>
               </button>
             )}
-            <div className="relative flex items-center">
-              <div className="flex-grow border-t border-green-300"></div>
-              <span className="flex-shrink-0 mx-4 text-green-500 text-xs font-bold uppercase">O</span>
-              <div className="flex-grow border-t border-green-300"></div>
-            </div>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const code = e.target.elements.groupCode.value.trim().toUpperCase();
-              if (code) {
-                setCurrentGroupCode(code);
-                setEntries([]);
-              }
-            }} className="flex gap-2">
-              <input name="groupCode" placeholder="Código (ej. AB12CD)" className="w-full text-center uppercase border border-green-300 px-3 py-2 rounded-xl focus:outline-none focus:border-green-500 font-bold text-green-900" />
-              <button type="submit" className="bg-green-100 text-green-800 border border-green-300 font-black py-2 px-3 rounded-xl hover:bg-green-200">
-                Unirse
-              </button>
-            </form>
           </div>
-        </div>
-      )}
-
-      {isOpen && currentGroupCode && (
-        <div className="mt-3">
-          <div className="mb-3 flex flex-col sm:flex-row items-center justify-between bg-green-100 p-2 rounded-xl border border-green-200">
-            <span className="text-xs font-black text-green-800">Grupo actual: <span className="text-lg bg-white px-2 py-1 rounded text-green-700 select-all">{currentGroupCode}</span></span>
-            <button onClick={() => setCurrentGroupCode('')} className="text-xs text-red-600 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-lg mt-2 sm:mt-0 font-bold">Salir de la lista</button>
-          </div>
-          <p className="mt-2 text-xs text-green-800">Comparte este código para colaborar en la lista con amigos.</p>
 
           {status && (
-            <div className="mb-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-[11px] font-semibold text-green-700">
+            <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-800 text-center">
               {status}
             </div>
           )}
 
-          {!(currentGroupCode === '0001' && currentUser?.is_admin) && (
-            <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-green-200 bg-green-50/70 p-3">
+          {/* Formulario de registro (visible en la lista personal) */}
+          {!isGlobalView && (
+            <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-green-200 bg-green-50/70 p-3 shadow-sm">
               <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-green-700">UID</label>
-          <input
-            value={form.uid}
-            onChange={(event) => setForm((prev) => ({ ...prev, uid: event.target.value }))}
-            className="w-full rounded-xl border border-green-200 bg-white px-3 py-2 text-sm font-semibold text-green-900 outline-none focus:border-green-500"
-            placeholder="Número de UID"
-          />
-        </div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wide text-green-700">
+                    UID del Jugador
+                  </label>
+                  {currentUser?.uid && form.uid !== currentUser.uid && (
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, uid: currentUser.uid }))}
+                      className="text-[10px] font-bold text-green-700 hover:underline"
+                    >
+                      Usar mi UID ({currentUser.uid})
+                    </button>
+                  )}
+                </div>
+                <input
+                  value={form.uid}
+                  onChange={(event) => setForm((prev) => ({ ...prev, uid: event.target.value }))}
+                  className="w-full rounded-xl border border-green-200 bg-white px-3 py-2 text-xs font-semibold text-green-900 outline-none focus:border-green-500"
+                  placeholder="Ej. 10589616"
+                  required
+                />
+              </div>
 
-        <div className="grid grid-cols-5 gap-2">
-          {['stat0', 'stat1', 'stat2', 'stat3', 'stat4'].map((field, index) => (
-            <div key={field}>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-green-700">
-                {['🐸', '🐼', '💧', '🦈', '🦉'][index]}
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={form[field]}
-                onChange={(event) => setForm((prev) => ({ ...prev, [field]: event.target.value }))}
-                className="w-full rounded-lg border border-green-200 bg-white px-2 py-2 text-center text-sm font-semibold text-green-900 outline-none focus:border-green-500"
-              />
-            </div>
-          ))}
-        </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[10px] font-black uppercase tracking-wide text-green-700">
+                    Estadísticas de Animales
+                  </label>
+                  <span className="text-[10px] text-green-600 font-semibold">Toca para ingresar</span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {STAT_CONFIG.map(({ key, emoji, name }) => (
+                    <div key={key} className="bg-white/80 rounded-lg p-2 border border-green-200/80 text-center flex flex-col items-center">
+                      <label className="mb-1.5 block text-lg leading-none cursor-default select-none" title={name}>
+                        {emoji}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="999"
+                        value={form[key]}
+                        onChange={(event) => setForm((prev) => ({ ...prev, [key]: event.target.value }))}
+                        className="w-full rounded-lg border border-green-300 bg-green-50/40 px-1 py-1.5 text-center text-xs font-black text-green-900 outline-none focus:border-green-500 focus:bg-white"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-green-500 disabled:opacity-70"
-              >
-                {isSaving ? 'Guardando...' : editingId ? 'Actualizar' : 'Agregar'}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="rounded-xl border border-green-200 bg-white px-3 py-2 text-xs font-bold text-green-700"
-              >
-                Limpiar
-              </button>
-            </div>
-          </form>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-1 rounded-xl bg-green-600 hover:bg-green-500 px-4 py-2.5 text-xs font-black text-white shadow-sm transition disabled:opacity-70"
+                >
+                  {isSaving ? 'Guardando...' : editingId ? 'Actualizar Registro' : 'Guardar Progreso'}
+                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
           )}
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-green-200">
-            <table className="min-w-full divide-y divide-green-200 bg-white text-left text-[11px]">
-              <thead className="bg-green-50 text-green-700">
+          {/* Tabla de registros con scroll horizontal responsivo y tamaños compactos */}
+          <div className="w-full overflow-x-auto rounded-xl border border-green-200 shadow-sm bg-white">
+            <table className="w-full min-w-[360px] divide-y divide-green-200 text-left text-[11px] sm:text-xs">
+              <thead className="bg-green-50 text-green-800 select-none">
                 <tr>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('uid')}>
+                  <th
+                    className="px-1.5 sm:px-2.5 py-2 font-black cursor-pointer hover:bg-green-100 whitespace-nowrap"
+                    onClick={() => requestSort('uid')}
+                  >
                     UID {sortConfig.key === 'uid' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('stat0')}>
-                    🐸 {sortConfig.key === 'stat0' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                  </th>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('stat1')}>
-                    🐼 {sortConfig.key === 'stat1' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                  </th>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('stat2')}>
-                    💧 {sortConfig.key === 'stat2' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                  </th>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('stat3')}>
-                    🦈 {sortConfig.key === 'stat3' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                  </th>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('stat4')}>
-                    🦉 {sortConfig.key === 'stat4' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                  </th>
-                  <th className="px-2 py-2 font-black cursor-pointer hover:bg-green-100" onClick={() => requestSort('prom')}>
+                  {STAT_CONFIG.map(({ key, emoji, name }) => (
+                    <th
+                      key={key}
+                      className="px-0.5 sm:px-1.5 py-2 font-black text-center cursor-pointer hover:bg-green-100"
+                      onClick={() => requestSort(key)}
+                      title={`Ordenar por ${name}`}
+                    >
+                      <span className="text-xs sm:text-sm">{emoji}</span>
+                      {sortConfig.key === key && (
+                        <span className="text-[9px] block leading-none">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </th>
+                  ))}
+                  <th
+                    className="px-1 sm:px-2 py-2 font-black text-center cursor-pointer hover:bg-green-100 whitespace-nowrap"
+                    onClick={() => requestSort('prom')}
+                  >
                     Prom. {sortConfig.key === 'prom' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th className="px-2 py-2 font-black">Acción</th>
+                  <th className="px-1.5 sm:px-2 py-2 font-black text-center whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-green-100">
-                {sortedEntries.length === 0 ? (
+                {isLoading ? (
                   <tr>
-                    <td colSpan="8" className="px-3 py-4 text-center text-green-700">
-                      Aún no hay registros compartidos.
+                    <td colSpan="9" className="px-3 py-6 text-center text-xs text-green-700">
+                      ⏳ Cargando registros...
+                    </td>
+                  </tr>
+                ) : sortedEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="px-3 py-6 text-center text-xs text-green-700">
+                      {isGlobalView
+                        ? 'No se encontraron registros de jugadores.'
+                        : 'Aún no has registrado tus estadísticas. ¡Ingrésalas arriba!'}
                     </td>
                   </tr>
                 ) : (
                   sortedEntries.map((entry) => {
-                    const stats = [entry.stat0 ?? 0, entry.stat1 ?? 0, entry.stat2 ?? 0, entry.stat3 ?? 0, entry.stat4 ?? 0];
+                    const stats = getStatsArray(entry);
                     const averageNum = stats.reduce((sum, value) => sum + value, 0) / stats.length;
                     const average = averageNum.toFixed(1);
-                    let avgClass = '';
-                    if (averageNum >= 100) avgClass = 'cozy-100';
-                    else if (averageNum >= 90) avgClass = 'cozy-90';
-                    else if (averageNum >= 80) avgClass = 'cozy-80';
-                    else if (averageNum >= 70) avgClass = 'cozy-70';
-                    else avgClass = 'cozy-below';
+                    const avgClass = getStatClass(averageNum);
+
+                    const isOwnUid = entry.uid === currentUser?.uid;
+                    const isJustCopied = copiedUid === entry.uid;
 
                     return (
-                      <tr key={entry.id} className="hover:bg-green-50/70">
-                        <td className="px-2 py-2 font-black text-green-900">
-                          <div className="flex items-center gap-2">
-                            <span>{entry.uid}</span>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(entry.uid);
-                                  const el = document.createElement('div');
-                                  el.textContent = 'UID copiado';
-                                  Object.assign(el.style, {
-                                    position: 'fixed',
-                                    bottom: '16px',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    background: 'rgba(0,0,0,0.8)',
-                                    color: 'white',
-                                    padding: '8px 12px',
-                                    borderRadius: '8px',
-                                    zIndex: 9999,
-                                    fontSize: '12px'
-                                  });
-                                  document.body.appendChild(el);
-                                  setTimeout(() => el.remove(), 1800);
-                                } catch (err) {
-                                  console.warn('No se pudo copiar UID', err);
-                                }
-                              }}
-                              className="rounded-lg bg-green-100 px-2 py-1 text-[10px] font-black text-green-800"
-                              title="Copiar UID"
-                              aria-label="Copiar UID"
-                            >
-                              📋
-                            </button>
-                          </div>
+                      <tr
+                        key={entry.id || entry.uid}
+                        className={`hover:bg-green-50/70 transition ${
+                          isJustCopied
+                            ? 'bg-emerald-100/70'
+                            : isOwnUid
+                            ? 'bg-green-50/60 font-medium'
+                            : ''
+                        }`}
+                      >
+                        {/* Celda de UID con toque súper rápido para copiar */}
+                        <td className="px-1.5 sm:px-2.5 py-1.5 font-black text-green-900">
+                          <button
+                            type="button"
+                            onClick={() => copyUidFast(entry.uid)}
+                            className="flex items-center gap-1 group text-left cursor-pointer rounded px-1 py-0.5 hover:bg-green-200/70 transition active:scale-95"
+                            title="Toca para copiar UID al instante"
+                          >
+                            <span className="truncate max-w-[68px] sm:max-w-[95px] text-[11px] sm:text-xs">
+                              {entry.uid}
+                            </span>
+                            <span className="text-[10px] shrink-0 font-bold">
+                              {isJustCopied ? '✅' : '📋'}
+                            </span>
+                          </button>
                         </td>
-                        {stats.map((value, index) => {
-                          let statClass = '';
-                          if (value >= 100) statClass = 'cozy-100';
-                          else if (value >= 90) statClass = 'cozy-90';
-                          else if (value >= 80) statClass = 'cozy-80';
-                          else if (value >= 70) statClass = 'cozy-70';
-                          else statClass = 'cozy-below';
-
-                          return (
-                            <td key={`${entry.id}-${index}`} className={`px-2 py-2 ${statClass}`}>
-                              {value}
-                            </td>
-                          );
-                        })}
-                        <td className={`px-2 py-2 font-black ${avgClass}`}>{average}</td>
-                        <td className="px-2 py-2">
-                          {currentGroupCode === '0001' ? (
-                            <div className="flex gap-1 items-center">
+                        {stats.map((value, index) => (
+                          <td
+                            key={`${entry.id || entry.uid}-${index}`}
+                            className={`px-0.5 sm:px-1.5 py-1.5 text-center text-[11px] sm:text-xs ${getStatClass(value)}`}
+                          >
+                            {value}
+                          </td>
+                        ))}
+                        <td className={`px-1 sm:px-2 py-1.5 text-center text-[11px] sm:text-xs ${avgClass}`}>
+                          {average}
+                        </td>
+                        <td className="px-1.5 sm:px-2 py-1.5 text-center whitespace-nowrap">
+                          {isGlobalView ? (
+                            <div className="flex gap-1 justify-center items-center">
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  if (!currentUser?.is_admin) {
-                                    setStatus('Solo administradores pueden eliminar UIDs en 0001.');
-                                    return;
-                                  }
-                                  const confirmDelete = window.confirm(`Eliminar todas las entradas del UID ${entry.uid}? Esta acción no se puede deshacer.`);
-                                  if (!confirmDelete) return;
-                                  try {
-                                    await deleteAdminBoardEntriesByUid(entry.uid);
-                                    setEntries((prev) => prev.filter((e) => e.uid !== entry.uid));
-                                    setStatus(`UID ${entry.uid} eliminado de todas las listas.`);
-                                  } catch (err) {
-                                    console.error('Error eliminando UID', err);
-                                    setStatus('No se pudo eliminar el UID.');
-                                  }
-                                }}
-                                className={`rounded-lg px-2 py-1 text-[10px] font-black ${currentUser?.is_admin ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                                title={currentUser?.is_admin ? 'Eliminar UID en todas las listas' : 'Solo administradores'}
-                                aria-label="Eliminar UID en todas las listas"
+                                onClick={() => handleDelete(entry)}
+                                className="rounded bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px] font-black"
+                                title="Eliminar registro"
                               >
                                 🗑️
                               </button>
-                              {!currentUser?.is_admin && (
-                                <span className="text-[11px] text-gray-500">(solo admins)</span>
-                              )}
                             </div>
                           ) : (
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 justify-center items-center">
                               <button
                                 type="button"
                                 onClick={() => handleEdit(entry)}
-                                className="rounded-lg bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-700"
+                                className="rounded bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border border-yellow-200 px-1.5 py-0.5 text-[10px] font-black"
                                 title="Editar registro"
-                                aria-label="Editar registro"
                               >
                                 ✏️
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDelete(entry.id)}
-                                className="rounded-lg bg-red-100 px-2 py-1 text-[10px] font-black text-red-700"
+                                onClick={() => handleDelete(entry)}
+                                className="rounded bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px] font-black"
                                 title="Eliminar registro"
-                                aria-label="Eliminar registro"
                               >
                                 🗑️
                               </button>
@@ -468,3 +613,4 @@ export function AdminBoard({ currentUser }) {
     </section>
   );
 }
+
