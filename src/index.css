@@ -31,7 +31,14 @@
 .tt-dark .bg-sky-100,
 .tt-dark .bg-violet-100,
 .tt-dark .bg-rose-100,
-.tt-dark .bg-orange-100 {
+.tt-dark .bg-orange-100,
+.tt-dark .bg-indigo-50,
+.tt-dark .bg-indigo-50\/40,
+.tt-dark .bg-indigo-50\/50,
+.tt-dark .bg-indigo-50\/70,
+.tt-dark .bg-indigo-100,
+.tt-dark .bg-indigo-100\/70,
+.tt-dark .bg-indigo-200 {
   background: #0f1b2d !important;
   color: #edf4ff !important;
 }
@@ -96,10 +103,17 @@
 .tt-dark .border-green-200,
 .tt-dark .border-green-300,
 .tt-dark .border-emerald-200,
+.tt-dark .border-indigo-100,
+.tt-dark .border-indigo-200,
+.tt-dark .border-indigo-300,
+.tt-dark .border-indigo-400,
+.tt-dark .border-indigo-600,
 .tt-dark .border-white\/70,
 .tt-dark .border-gray-300\/50,
 .tt-dark .divide-green-100 > :not([hidden]) ~ :not([hidden]),
-.tt-dark .divide-green-200 > :not([hidden]) ~ :not([hidden]) {
+.tt-dark .divide-green-200 > :not([hidden]) ~ :not([hidden]),
+.tt-dark .divide-indigo-50 > :not([hidden]) ~ :not([hidden]),
+.tt-dark .divide-indigo-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: #263750 !important;
 }
 
@@ -114,7 +128,11 @@
 .tt-dark .text-blue-800,
 .tt-dark .text-yellow-800,
 .tt-dark .text-yellow-900,
-.tt-dark .text-gray-800 {
+.tt-dark .text-gray-800,
+.tt-dark .text-gray-900,
+.tt-dark .text-indigo-950,
+.tt-dark .text-indigo-900,
+.tt-dark .text-indigo-800 {
   color: #f4f8ff !important;
 }
 
@@ -125,8 +143,11 @@
 .tt-dark .text-amber-700,
 .tt-dark .text-yellow-700,
 .tt-dark .text-gray-600,
-.tt-dark .text-slate-600 {
-  color: #b8cbe4 !important;
+.tt-dark .text-gray-700,
+.tt-dark .text-slate-600,
+.tt-dark .text-indigo-700,
+.tt-dark .text-indigo-600 {
+  color: #c5d8f3 !important;
 }
 
 .tt-dark .text-green-500,
@@ -134,8 +155,10 @@
 .tt-dark .text-blue-600,
 .tt-dark .text-yellow-600,
 .tt-dark .text-gray-400,
-.tt-dark .text-gray-500 {
-  color: #91acd0 !important;
+.tt-dark .text-gray-500,
+.tt-dark .text-indigo-400,
+.tt-dark .text-indigo-500 {
+  color: #9ab7dc !important;
 }
 
 .tt-dark .bg-green-600,

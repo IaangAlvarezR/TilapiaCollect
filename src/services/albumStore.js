@@ -143,6 +143,127 @@ export async function registerUser(uid, name, pin) {
   return data
 }
 
+export async function updateUserProfile({ oldUid, newUid, name, pin }) {
+  const cleanOldUid = String(oldUid || '').trim()
+  const cleanNewUid = String(newUid || '').trim()
+  const cleanName = String(name || '').trim()
+  const cleanPin = String(pin || '').trim()
+
+  if (!cleanOldUid || !cleanNewUid || !cleanName || !cleanPin) {
+    throw new Error('Todos los campos (UID, Nombre, PIN) son obligatorios.')
+  }
+
+  // Si el UID no cambia, actualizamos nombre y pin
+  if (cleanOldUid === cleanNewUid) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ name: cleanName, pin: cleanPin })
+      .eq('uid', cleanOldUid)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  // Si el UID cambió:
+  // 1. Verificar si el nuevo UID ya existe
+  const { data: existingUser, error: checkError } = await supabase
+    .from('users')
+    .select('uid')
+    .eq('uid', cleanNewUid)
+    .maybeSingle()
+
+  if (checkError) throw checkError
+  if (existingUser) {
+    throw new Error(`El UID "${cleanNewUid}" ya está registrado por otro usuario.`)
+  }
+
+  // 2. Obtener datos actuales del usuario (para preservar is_admin)
+  const { data: currentUserData, error: fetchError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('uid', cleanOldUid)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  // 3. Crear el nuevo registro con el nuevo UID
+  const { data: newUser, error: insertError } = await supabase
+    .from('users')
+    .insert({
+      uid: cleanNewUid,
+      name: cleanName,
+      pin: cleanPin,
+      is_admin: currentUserData?.is_admin || false,
+    })
+    .select()
+    .single()
+
+  if (insertError) throw insertError
+
+  // 4. Migrar progreso en player_progress
+  try {
+    await supabase
+      .from('player_progress')
+      .update({ user_id: cleanNewUid })
+      .eq('user_id', cleanOldUid)
+  } catch (err) {
+    console.warn('Error migrando player_progress:', err)
+  }
+
+  // 5. Migrar entradas en admin_board_entries
+  try {
+    await supabase
+      .from('admin_board_entries')
+      .update({ uid: cleanNewUid })
+      .eq('uid', cleanOldUid)
+
+    await supabase
+      .from('admin_board_entries')
+      .update({ group_code: cleanNewUid })
+      .eq('group_code', cleanOldUid)
+  } catch (err) {
+    console.warn('Error migrando admin_board_entries:', err)
+  }
+
+  // 6. Eliminar el registro antiguo de users
+  try {
+    await supabase
+      .from('users')
+      .delete()
+      .eq('uid', cleanOldUid)
+  } catch (err) {
+    console.warn('Error eliminando usuario antiguo:', err)
+  }
+
+  return newUser
+}
+
+export async function deleteUserAccount(uid) {
+  const cleanUid = String(uid || '').trim()
+  if (!cleanUid) throw new Error('UID no válido.')
+
+  // Eliminar player_progress
+  try {
+    await supabase.from('player_progress').delete().eq('user_id', cleanUid)
+  } catch (err) {
+    console.warn('Error eliminando player_progress:', err)
+  }
+
+  // Eliminar admin_board_entries
+  try {
+    await supabase.from('admin_board_entries').delete().eq('uid', cleanUid)
+    await supabase.from('admin_board_entries').delete().eq('group_code', cleanUid)
+  } catch (err) {
+    console.warn('Error eliminando admin_board_entries:', err)
+  }
+
+  // Eliminar de users
+  const { error } = await supabase.from('users').delete().eq('uid', cleanUid)
+  if (error) throw error
+}
+
 export async function loadAdminBoardEntries(userUid) {
   let query = supabase
     .from('admin_board_entries')

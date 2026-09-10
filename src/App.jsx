@@ -4,6 +4,7 @@ import { Card } from './components/Card';
 import { AuthModal } from './components/AuthModal';
 import { MissingCardFinder } from './components/MissingCardFinder';
 import { AdminBoard } from './components/AdminBoard';
+import { UserManager } from './components/UserManager';
 import { ProgressHeader } from './components/ProgressHeader';
 import {
   loadGeneralCards,
@@ -498,6 +499,47 @@ export default function App() {
     }
   };
 
+  const handleReloadUsers = async () => {
+    try {
+      const refreshedUsers = await loadUsers();
+      if (refreshedUsers) setUsers(refreshedUsers);
+    } catch (err) {
+      console.warn('Error recargando usuarios:', err);
+    }
+  };
+
+  const handleUserUpdated = ({ oldUid, newUid, updatedUser }) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.uid === oldUid ? updatedUser : u))
+    );
+
+    if (oldUid !== newUid) {
+      setAllProgress((prev) => {
+        const next = { ...prev };
+        if (next[oldUid]) {
+          next[newUid] = next[oldUid];
+          delete next[oldUid];
+        }
+        return next;
+      });
+
+      if (currentUser?.uid === oldUid) {
+        setCurrentUser(updatedUser);
+      }
+    } else if (currentUser?.uid === oldUid) {
+      setCurrentUser((prev) => ({ ...prev, ...updatedUser }));
+    }
+  };
+
+  const handleUserDeleted = (deletedUid) => {
+    setUsers((prev) => prev.filter((u) => u.uid !== deletedUid));
+    setAllProgress((prev) => {
+      const next = { ...prev };
+      delete next[deletedUid];
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-green-50 text-green-900 flex flex-col font-sans max-w-xl mx-auto border-x border-green-200 shadow-2xl">
       
@@ -682,6 +724,14 @@ export default function App() {
             </div>
           </section>
 
+
+          <UserManager
+            currentUser={currentUser}
+            users={users}
+            onReloadUsers={handleReloadUsers}
+            onUserUpdated={handleUserUpdated}
+            onUserDeleted={handleUserDeleted}
+          />
 
           <AdminBoard
             currentUser={currentUser}
