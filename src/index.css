@@ -1,283 +1,174 @@
 @import "tailwindcss";
 
-/* Dark mode overrides. The app toggles .tt-dark on <html>. */
-.tt-dark .min-h-screen {
-  background: #07111f !important;
-  color: #edf4ff !important;
+:root {
+  color-scheme: dark;
 }
 
-.tt-dark header,
-.tt-dark header.p-4,
-.tt-dark header[class*="bg-"] {
-  background: #0b1628 !important;
-  border-bottom-color: #23324a !important;
+body {
+  margin: 0;
+  background-color: #120b0c;
+  color: #fce7db;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(249, 115, 22, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(217, 119, 6, 0.05) 0%, transparent 60%);
+  background-attachment: fixed;
 }
 
-.tt-dark section,
-.tt-dark main,
-.tt-dark .bg-white,
-.tt-dark .bg-white\/70,
-.tt-dark .bg-white\/80,
-.tt-dark .bg-white\/95,
-.tt-dark .bg-green-50,
-.tt-dark .bg-green-50\/50,
-.tt-dark .bg-green-50\/60,
-.tt-dark .bg-green-50\/70,
-.tt-dark .bg-green-100,
-.tt-dark .bg-green-100\/70,
-.tt-dark .bg-green-200,
-.tt-dark .bg-emerald-100,
-.tt-dark .bg-amber-100,
-.tt-dark .bg-sky-100,
-.tt-dark .bg-violet-100,
-.tt-dark .bg-rose-100,
-.tt-dark .bg-orange-100,
-.tt-dark .bg-indigo-50,
-.tt-dark .bg-indigo-50\/40,
-.tt-dark .bg-indigo-50\/50,
-.tt-dark .bg-indigo-50\/70,
-.tt-dark .bg-indigo-100,
-.tt-dark .bg-indigo-100\/70,
-.tt-dark .bg-indigo-200 {
-  background: #0f1b2d !important;
-  color: #edf4ff !important;
+/* Custom Halloween & Autumn scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #191012;
+}
+::-webkit-scrollbar-thumb {
+  background: #7c2d12;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c2410c;
 }
 
-.tt-dark .bg-sky-100\/80 {
-  background: #102a3f !important;
+/* Custom pulse animations for festive halloween items */
+@keyframes spooky-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(217, 119, 6, 0.6), 0 0 10px rgba(168, 85, 247, 0.4);
+  }
 }
 
-.tt-dark .bg-amber-100\/80 {
-  background: #352812 !important;
+.halloween-glow {
+  animation: spooky-glow 3.5s infinite ease-in-out;
 }
 
-.tt-dark .bg-violet-100\/80 {
-  background: #271f43 !important;
+/* Cozy Farm score color classes (adaptadas a Halloween / Otoño con alto contraste) */
+.cozy-purple { 
+  color: #f3e8ff; 
+  background-color: rgba(147, 51, 234, 0.35); 
+  border: 1px solid #c084fc; 
+  font-weight: 800; 
+  border-radius: 6px; 
+  padding: 2px 4px; 
+}
+.cozy-blue { 
+  color: #e0f2fe; 
+  background-color: rgba(14, 116, 144, 0.35); 
+  border: 1px solid #38bdf8; 
+  font-weight: 700; 
+  border-radius: 6px; 
+  padding: 2px 4px; 
+}
+.cozy-green { 
+  color: #dcfce7; 
+  background-color: rgba(22, 101, 52, 0.45); 
+  border: 1px solid #4ade80; 
+  font-weight: 700; 
+  border-radius: 6px; 
+  padding: 2px 4px; 
+}
+.cozy-yellow { 
+  color: #fef08a; 
+  background-color: rgba(161, 98, 7, 0.4); 
+  border: 1px solid #facc15; 
+  font-weight: 700; 
+  border-radius: 6px; 
+  padding: 2px 4px; 
+}
+.cozy-red { 
+  color: #fee2e2; 
+  background-color: rgba(185, 28, 28, 0.4); 
+  border: 1px solid #f87171; 
+  font-weight: 700; 
+  border-radius: 6px; 
+  padding: 2px 4px; 
 }
 
-.tt-dark .bg-emerald-100\/80 {
-  background: #133225 !important;
+/* Animaciones de hojas cayendo (🍂 🍁 🌰) */
+@keyframes leaf-fall {
+  0% {
+    top: -8%;
+    transform: translateX(0px) rotate(0deg) scale(0.85);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateX(35px) rotate(180deg) scale(1);
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.65;
+  }
+  100% {
+    top: 108%;
+    transform: translateX(-35px) rotate(360deg) scale(0.9);
+    opacity: 0;
+  }
 }
 
-.tt-dark .bg-rose-100\/80 {
-  background: #3a1b2a !important;
+/* Animaciones de fantasmas flotando (👻) */
+@keyframes ghost-float-up {
+  0% {
+    top: 108%;
+    transform: translateX(0px) scale(0.85);
+    opacity: 0;
+    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.4));
+  }
+  15% {
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(-40px) translateY(-10px) scale(1.1);
+    opacity: 0.85;
+    filter: drop-shadow(0 0 14px rgba(192, 132, 252, 0.7));
+  }
+  75% {
+    transform: translateX(30px) translateY(10px) scale(0.95);
+    opacity: 0.7;
+  }
+  100% {
+    top: -12%;
+    transform: translateX(-20px) scale(1);
+    opacity: 0;
+    filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.2));
+  }
 }
 
-.tt-dark .bg-orange-100\/80 {
-  background: #3b2414 !important;
+/* Sutil efecto de brillo místico */
+@keyframes ghost-wiggle {
+  0%, 100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
 }
 
-.tt-dark .bg-sky-100\/80.border {
-  border-color: #28587a !important;
+.ambient-leaf {
+  position: absolute;
+  animation-name: leaf-fall;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, top, opacity;
+  user-select: none;
+  pointer-events: none;
 }
 
-.tt-dark .bg-amber-100\/80.border {
-  border-color: #75551d !important;
+.ambient-ghost {
+  position: absolute;
+  animation-name: ghost-float-up;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, top, opacity;
+  user-select: none;
+  pointer-events: none;
 }
 
-.tt-dark .bg-violet-100\/80.border {
-  border-color: #55468a !important;
-}
 
-.tt-dark .bg-emerald-100\/80.border {
-  border-color: #2d7558 !important;
-}
-
-.tt-dark .bg-rose-100\/80.border {
-  border-color: #7c3652 !important;
-}
-
-.tt-dark .bg-orange-100\/80.border {
-  border-color: #844a22 !important;
-}
-
-.tt-dark .rounded-2xl.border,
-.tt-dark .rounded-xl.border,
-.tt-dark .rounded-lg.border,
-.tt-dark .rounded-md.border,
-.tt-dark table {
-  border-color: #263750 !important;
-}
-
-.tt-dark .border-green-100,
-.tt-dark .border-green-200,
-.tt-dark .border-green-300,
-.tt-dark .border-emerald-200,
-.tt-dark .border-indigo-100,
-.tt-dark .border-indigo-200,
-.tt-dark .border-indigo-300,
-.tt-dark .border-indigo-400,
-.tt-dark .border-indigo-600,
-.tt-dark .border-white\/70,
-.tt-dark .border-gray-300\/50,
-.tt-dark .divide-green-100 > :not([hidden]) ~ :not([hidden]),
-.tt-dark .divide-green-200 > :not([hidden]) ~ :not([hidden]),
-.tt-dark .divide-indigo-50 > :not([hidden]) ~ :not([hidden]),
-.tt-dark .divide-indigo-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #263750 !important;
-}
-
-.tt-dark .shadow-sm,
-.tt-dark .shadow-md,
-.tt-dark .shadow-2xl {
-  box-shadow: none !important;
-}
-
-.tt-dark .text-green-900,
-.tt-dark .text-green-800,
-.tt-dark .text-blue-800,
-.tt-dark .text-yellow-800,
-.tt-dark .text-yellow-900,
-.tt-dark .text-gray-800,
-.tt-dark .text-gray-900,
-.tt-dark .text-indigo-950,
-.tt-dark .text-indigo-900,
-.tt-dark .text-indigo-800 {
-  color: #f4f8ff !important;
-}
-
-.tt-dark .text-green-700,
-.tt-dark .text-green-600,
-.tt-dark .text-emerald-700,
-.tt-dark .text-blue-700,
-.tt-dark .text-amber-700,
-.tt-dark .text-yellow-700,
-.tt-dark .text-gray-600,
-.tt-dark .text-gray-700,
-.tt-dark .text-slate-600,
-.tt-dark .text-indigo-700,
-.tt-dark .text-indigo-600 {
-  color: #c5d8f3 !important;
-}
-
-.tt-dark .text-green-500,
-.tt-dark .text-yellow-500,
-.tt-dark .text-blue-600,
-.tt-dark .text-yellow-600,
-.tt-dark .text-gray-400,
-.tt-dark .text-gray-500,
-.tt-dark .text-indigo-400,
-.tt-dark .text-indigo-500 {
-  color: #9ab7dc !important;
-}
-
-.tt-dark .bg-green-600,
-.tt-dark .bg-emerald-600,
-.tt-dark .bg-green-500 {
-  background: #157347 !important;
-  color: #f2fff7 !important;
-}
-
-.tt-dark .bg-blue-500,
-.tt-dark .bg-blue-400 {
-  background: #1d5f99 !important;
-  color: #f0f8ff !important;
-}
-
-.tt-dark .bg-yellow-400,
-.tt-dark .bg-yellow-300 {
-  background: #9a640b !important;
-  color: #fff8e6 !important;
-}
-
-.tt-dark .bg-yellow-100,
-.tt-dark .bg-blue-50,
-.tt-dark .bg-blue-100,
-.tt-dark .bg-blue-200\/70,
-.tt-dark .bg-slate-100,
-.tt-dark .bg-gray-100,
-.tt-dark .bg-gray-200 {
-  background: #17263d !important;
-  color: #d9e7f7 !important;
-}
-
-.tt-dark button.bg-blue-100,
-.tt-dark button.bg-blue-200\/70 {
-  background: #174f86 !important;
-  color: #e5f3ff !important;
-  border-color: #2e7fc2 !important;
-}
-
-.tt-dark button.bg-blue-100:hover,
-.tt-dark button.bg-blue-200\/70:hover {
-  background: #2169ad !important;
-}
-
-.tt-dark button.bg-yellow-100,
-.tt-dark button.bg-yellow-300,
-.tt-dark button.bg-yellow-400 {
-  background: #a66b08 !important;
-  color: #fff4cf !important;
-  border-color: #d99c22 !important;
-}
-
-.tt-dark button.bg-yellow-100:hover,
-.tt-dark button.bg-yellow-300:hover,
-.tt-dark button.bg-yellow-400:hover {
-  background: #c9860c !important;
-}
-
-.tt-dark button.bg-blue-500 {
-  background: #1d6fb8 !important;
-  color: #f0f8ff !important;
-}
-
-.tt-dark button.bg-yellow-400.text-yellow-900 {
-  background: #c9860c !important;
-  color: #fff8df !important;
-}
-
-.tt-dark input,
-.tt-dark textarea,
-.tt-dark select {
-  background: #101d31 !important;
-  color: #f4f8ff !important;
-  border-color: #2c405f !important;
-}
-
-.tt-dark input::placeholder,
-.tt-dark textarea::placeholder {
-  color: #7892b4 !important;
-}
-
-.tt-dark .border-dashed {
-  border-color: #365174 !important;
-}
-
-.tt-dark .opacity-60 {
-  opacity: 0.78 !important;
-}
-
-.tt-dark .opacity-30 {
-  opacity: 0.42 !important;
-}
-
-.tt-dark .hover\:bg-green-50:hover,
-.tt-dark .hover\:bg-green-50\/70:hover,
-.tt-dark .hover\:bg-green-100:hover,
-.tt-dark .hover\:bg-green-200:hover {
-  background: #1a2a43 !important;
-}
-
-.tt-dark .no-scrollbar {
-  scrollbar-color: #314766 transparent;
-}
-
-.tt-dark .toast-tt {
-  background: #122039;
-  color: #edf4ff;
-}
-
-/* Cozy Farm score color classes (Morado, Azul, Verde, Amarillo, Rojo) */
-.cozy-purple { color: #581c87; background-color: #f3e8ff; border: 1px solid #c084fc; font-weight: 800; border-radius: 6px; padding: 2px 4px; }
-.cozy-blue { color: #1e40af; background-color: #dbeafe; border: 1px solid #93c5fd; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-.cozy-green { color: #166534; background-color: #dcfce7; border: 1px solid #86efac; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-.cozy-yellow { color: #854d0e; background-color: #fef9c3; border: 1px solid #fde047; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-.cozy-red { color: #991b1b; background-color: #fee2e2; border: 1px solid #fca5a5; font-weight: 700; border-radius: 6px; padding: 2px 4px; }
-
-.tt-dark .cozy-purple { color: #e9d5ff !important; background-color: rgba(126, 34, 206, 0.35) !important; border-color: #a855f7 !important; }
-.tt-dark .cozy-blue { color: #bfdbfe !important; background-color: rgba(30, 58, 138, 0.45) !important; border-color: #3b82f6 !important; }
-.tt-dark .cozy-green { color: #bbf7d0 !important; background-color: rgba(20, 83, 45, 0.45) !important; border-color: #22c55e !important; }
-.tt-dark .cozy-yellow { color: #fef08a !important; background-color: rgba(113, 63, 18, 0.45) !important; border-color: #eab308 !important; }
-.tt-dark .cozy-red { color: #fecaca !important; background-color: rgba(127, 29, 29, 0.45) !important; border-color: #ef4444 !important; }
 

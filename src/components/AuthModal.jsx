@@ -44,24 +44,25 @@ export function AuthModal({ onAuthenticate, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-xs text-center shadow-2xl">
-        <h3 className="text-lg font-bold text-white mb-1">
-          {isRegistering ? 'Crear Usuario' : 'Iniciar Sesión'}
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-stone-900 border border-orange-700/80 rounded-2xl p-6 w-full max-w-xs text-center shadow-2xl shadow-orange-950/80">
+        <h3 className="text-lg font-black text-amber-100 mb-1 flex items-center justify-center gap-1.5">
+          <span>{isRegistering ? '🎃' : '🔒'}</span>
+          <span>{isRegistering ? 'Crear Usuario' : 'Iniciar Sesión'}</span>
         </h3>
-        <p className="text-xs text-gray-400 mb-4">
+        <p className="text-xs text-orange-300/70 mb-4">
           {isRegistering
             ? 'Ingresa tus datos para registrarte.'
             : 'Ingresa tu usuario, UID o nombre y PIN para entrar.'}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <input
             type="text"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             placeholder="Usuario o UID"
-            className="w-full text-center text-lg bg-gray-800 text-white py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-indigo-500"
+            className="w-full text-center text-sm font-bold bg-stone-950 text-amber-200 py-2 rounded-xl border border-orange-800 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-inner"
             autoFocus
           />
 
@@ -70,8 +71,8 @@ export function AuthModal({ onAuthenticate, onClose }) {
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Nombre"
-              className="w-full text-center text-lg bg-gray-800 text-white py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-indigo-500"
+              placeholder="Nombre visible"
+              className="w-full text-center text-sm font-bold bg-stone-950 text-amber-200 py-2 rounded-xl border border-orange-800 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-inner"
             />
           )}
 
@@ -81,27 +82,27 @@ export function AuthModal({ onAuthenticate, onClose }) {
             value={pin}
             onChange={(event) => setPin(event.target.value)}
             placeholder="PIN (4 dígitos)"
-            className="w-full text-center text-2xl tracking-widest bg-gray-800 text-white py-2 rounded-lg border border-gray-600 focus:outline-none focus:border-indigo-500"
+            className="w-full text-center text-xl font-bold tracking-widest bg-stone-950 text-amber-200 py-2 rounded-xl border border-orange-800 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-inner"
           />
 
           {error && (
-            <p className="text-red-400 text-xs font-semibold">
+            <p className="text-rose-400 text-xs font-bold bg-rose-950/60 py-1 px-2 rounded-lg border border-rose-900">
               {error}
             </p>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="w-1/2 py-2 text-sm font-semibold bg-gray-800 text-gray-300 rounded-lg"
+              className="w-1/2 py-2 text-xs font-bold bg-stone-800 text-stone-300 hover:bg-stone-700 rounded-xl transition"
               disabled={isLoading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="w-1/2 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg shadow-lg"
+              className="w-1/2 py-2 text-xs font-black bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl shadow-md transition disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? '...' : isRegistering ? 'Registrar' : 'Entrar'}
@@ -115,7 +116,7 @@ export function AuthModal({ onAuthenticate, onClose }) {
             setIsRegistering(!isRegistering)
             setError('')
           }}
-          className="mt-4 text-xs text-indigo-400 hover:text-indigo-300 underline"
+          className="mt-4 text-xs font-bold text-orange-400 hover:text-amber-300 underline"
         >
           {isRegistering
             ? '¿Ya tienes cuenta? Inicia sesión'

@@ -5,9 +5,9 @@ export const ALBUM_CONFIG = {
 };
 
 export const SET_NAMES = [
-  "Caparacin", "Mecerino", "Barrigodo", "Chisparin", "Aletin", 
-  "Chisplet", "Llamallama", "Gigi", "Azugeco", "Rocuga", 
-  "Camarion", "Toperin", "Brotibu", "Cangris", "Fungin"
+  "Solpear", "Sparkrow", "Droppit", "Taptail", "Voltkit",
+  "Ringtail", "Maskfry", "Tindercub", "Punchimp", "Manteeny",
+  "Flameow", "Kittazap", "Cheeling", "Momopo", "Sparkit"
 ];
 
 export const generateAlbumData = () => {

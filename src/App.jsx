@@ -6,6 +6,7 @@ import { MissingCardFinder } from './components/MissingCardFinder';
 import { AdminBoard } from './components/AdminBoard';
 import { UserManager } from './components/UserManager';
 import { ProgressHeader } from './components/ProgressHeader';
+import { HalloweenAmbientBackground } from './components/HalloweenAmbientBackground';
 import {
   loadGeneralCards,
   loadTeamProgress,
@@ -19,7 +20,7 @@ const normalizeGeneralConfig = (pages = []) =>
   pages.map((page, index) => ({
     ...page,
     pageNumber: page.pageNumber ?? index + 1,
-    setName: page.setName || SET_NAMES[index] || `Set ${index + 1}`,
+    setName: SET_NAMES[index] || page.setName || `Set ${index + 1}`,
     cards: Array.isArray(page.cards)
       ? page.cards.map((card, cardIndex) => ({
           ...card,
@@ -31,21 +32,21 @@ const normalizeGeneralConfig = (pages = []) =>
   }));
 
 const SET_BACKGROUND_CLASSES = [
-  'bg-sky-100/80',
-  'bg-amber-100/80',
-  'bg-violet-100/80',
-  'bg-amber-100/80',
-  'bg-sky-100/80',
-  'bg-violet-100/80',
-  'bg-emerald-100/80',
-  'bg-sky-100/80',
-  'bg-rose-100/80',
-  'bg-orange-100/80',
-  'bg-rose-100/80',
-  'bg-violet-100/80',
-  'bg-emerald-100/80',
-  'bg-sky-100/80',
-  'bg-violet-100/80',
+  'bg-orange-950/70 border-orange-700/60',
+  'bg-amber-950/70 border-amber-700/60',
+  'bg-purple-950/70 border-purple-700/60',
+  'bg-stone-900/80 border-orange-800/60',
+  'bg-amber-900/60 border-yellow-700/60',
+  'bg-fuchsia-950/70 border-fuchsia-700/60',
+  'bg-emerald-950/70 border-emerald-700/60',
+  'bg-orange-900/60 border-orange-600/60',
+  'bg-purple-900/60 border-purple-600/60',
+  'bg-rose-950/70 border-rose-700/60',
+  'bg-yellow-950/70 border-amber-600/60',
+  'bg-violet-950/70 border-violet-700/60',
+  'bg-stone-950/80 border-purple-800/60',
+  'bg-orange-950/80 border-amber-700/60',
+  'bg-purple-950/80 border-orange-700/60',
 ];
 
 export default function App() {
@@ -61,17 +62,33 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState('');
+  const [summaryStars, setSummaryStars] = useState([1, 2, 3, 4, 5]); // [1, 2, 3, 4, 5]
   const [includeGoldInSummary, setIncludeGoldInSummary] = useState(true);
   const [bulkImportStatus, setBulkImportStatus] = useState('');
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('album_dark_mode');
-    return saved === '1';
-  });
   const headerRef = useRef(null);
   const [headerOffset, setHeaderOffset] = useState(0);
+
+  // Filtro de estrellas para resumen
+  const toggleSummaryStar = (star) => {
+    setSummaryStars((prev) => {
+      if (prev.includes(star)) {
+        if (prev.length === 1) return prev; // Mantener al menos 1
+        return prev.filter((s) => s !== star);
+      }
+      return [...prev, star].sort((a, b) => a - b);
+    });
+  };
+
+  const setSummaryPreset = (preset) => {
+    if (preset === 'all') setSummaryStars([1, 2, 3, 4, 5]);
+    else if (preset === '1-3') setSummaryStars([1, 2, 3]);
+    else if (preset === '3-4') setSummaryStars([3, 4]);
+    else if (preset === '4-5') setSummaryStars([4, 5]);
+    else if (preset === '5') setSummaryStars([5]);
+  };
 
   // Filters
   const [frameFilter, setFrameFilter] = useState('all'); // 'all', 'basic', 'gold'
@@ -116,6 +133,7 @@ export default function App() {
                       name: row.name,
                       stars: row.stars,
                       defaultFrame: row.default_frame,
+                      imageUrl: row.image_url !== undefined ? row.image_url : (card.imageUrl || null),
                     }
                   : card;
               }),
@@ -135,16 +153,6 @@ export default function App() {
       isMounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    try {
-      if (darkMode) document.documentElement.classList.add('tt-dark');
-      else document.documentElement.classList.remove('tt-dark');
-      localStorage.setItem('album_dark_mode', darkMode ? '1' : '0');
-    } catch (err) {
-      console.warn('No se pudo aplicar modo oscuro', err);
-    }
-  }, [darkMode]);
 
   useEffect(() => {
     const updateHeader = () => {
@@ -177,21 +185,30 @@ export default function App() {
     }
   }, [currentUser]);
 
+  const isVaiuOrAdmin = Boolean(
+    currentUser && (
+      currentUser.is_admin ||
+      currentUser.name?.toLowerCase().trim() === 'vaiu' ||
+      currentUser.uid?.toString().trim() === '10589616'
+    )
+  );
+
   const handleUpdateCardConfig = (cardId, field, value) => {
-    if (!currentUser?.is_admin) return;
+    if (!isVaiuOrAdmin) return;
 
-    const updatedCard = generalConfig
-      .flatMap((page) => page.cards)
-      .find((card) => card.id === cardId);
-
-    const cardToSave = updatedCard ? { ...updatedCard, [field]: value } : null;
+    let cardToSave = null;
 
     setGeneralConfig((prev) =>
       prev.map((page) => ({
         ...page,
-        cards: page.cards.map((card) =>
-          card.id === cardId ? { ...card, [field]: value } : card
-        ),
+        cards: page.cards.map((card) => {
+          if (card.id === cardId) {
+            const next = { ...card, [field]: value };
+            cardToSave = next;
+            return next;
+          }
+          return card;
+        }),
       }))
     );
 
@@ -253,7 +270,7 @@ export default function App() {
     }
   };
 
-  const isGeneralMode = currentUser?.is_admin || false;
+  const isGeneralMode = isVaiuOrAdmin;
   const currentUserProgress = currentUser ? (allProgress[currentUser.uid] || {}) : {};
   const allCards = generalConfig.flatMap((page) => page.cards);
   const completedCards = allCards.reduce((sum, card) => {
@@ -275,6 +292,29 @@ export default function App() {
   };
   const activeSetMatchingCards = activeSet?.cards.filter(matchesFilter).length || 0;
   const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
+
+  // Cálculo en tiempo real para el generador de resumen
+  const filteredSummaryCards = allCards.filter((card) => {
+    const matchStar = summaryStars.includes(card.stars || 1);
+    const matchGold = includeGoldInSummary ? true : card.defaultFrame !== 'gold';
+    return matchStar && matchGold;
+  });
+
+  const summaryDupCount = currentUser
+    ? filteredSummaryCards.filter((card) => {
+        const raw = currentUserProgress[card.id];
+        const count = typeof raw === 'number' ? raw : (raw?.count || 0);
+        return count > 1;
+      }).length
+    : 0;
+
+  const summaryMissCount = currentUser
+    ? filteredSummaryCards.filter((card) => {
+        const raw = currentUserProgress[card.id];
+        const count = typeof raw === 'number' ? raw : (raw?.count || 0);
+        return count === 0;
+      }).length
+    : 0;
 
 
 
@@ -313,7 +353,7 @@ export default function App() {
 
 
   const renderSetPagination = () => (
-    <div className="rounded-2xl border border-green-200 bg-white p-3 shadow-sm">
+    <div className="rounded-2xl border border-orange-900/60 bg-stone-900/90 p-3 shadow-lg shadow-black/40">
       <div className="mb-3 flex items-center justify-between gap-3">
         <button
           type="button"
@@ -321,17 +361,17 @@ export default function App() {
           disabled={safeActiveSetIndex === 0}
           className={`rounded-xl px-3 py-2 text-xs font-black transition-colors ${
             safeActiveSetIndex === 0
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-green-100 text-green-800 hover:bg-green-200'
+              ? 'bg-stone-950 text-stone-600 cursor-not-allowed border border-stone-800/40'
+              : 'bg-orange-950/80 text-orange-200 border border-orange-800/60 hover:bg-orange-900'
           }`}
         >
-          Anterior
+          ← Anterior
         </button>
         <div className="text-center">
-          <p className="text-[10px] font-black uppercase tracking-wide text-green-700">
-            Seccion {safeActiveSetIndex + 1} de {totalSetPages}
+          <p className="text-[10px] font-black uppercase tracking-wide text-orange-400">
+            🎃 Sección {safeActiveSetIndex + 1} de {totalSetPages}
           </p>
-          <p className="text-xs font-bold text-green-900">
+          <p className="text-xs font-bold text-amber-200">
             {activeSet ? `Set de ${activeSet.setName}` : 'Sin secciones'}
           </p>
         </div>
@@ -341,11 +381,11 @@ export default function App() {
           disabled={safeActiveSetIndex >= totalSetPages - 1}
           className={`rounded-xl px-3 py-2 text-xs font-black transition-colors ${
             safeActiveSetIndex >= totalSetPages - 1
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-green-100 text-green-800 hover:bg-green-200'
+              ? 'bg-stone-950 text-stone-600 cursor-not-allowed border border-stone-800/40'
+              : 'bg-orange-950/80 text-orange-200 border border-orange-800/60 hover:bg-orange-900'
           }`}
         >
-          Siguiente
+          Siguiente →
         </button>
       </div>
 
@@ -355,10 +395,10 @@ export default function App() {
             key={set.pageNumber}
             type="button"
             onClick={() => goToSet(index)}
-            className={`h-9 rounded-lg text-xs font-black transition-colors ${
+            className={`h-9 rounded-lg text-xs font-black transition-all ${
               safeActiveSetIndex === index
-                ? 'bg-green-600 text-white shadow-sm'
-                : 'bg-green-50 text-green-800 border border-green-200 hover:bg-green-100'
+                ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-900/60 scale-[1.03]'
+                : 'bg-stone-950 text-orange-300 border border-orange-900/50 hover:bg-orange-950/70 hover:text-amber-200'
             }`}
             title={`Set de ${set.setName}`}
           >
@@ -370,132 +410,109 @@ export default function App() {
   );
 
   const handleGenerateSummary = async () => {
-    if (currentUser) {
-      const getCardCount = (card) => {
-        const rawProgress = currentUserProgress[card.id];
-        const progressType = card.defaultFrame === 'gold' ? 'goldCount' : 'basicCount';
-
-        return typeof rawProgress === 'number'
-          ? rawProgress
-          : (rawProgress?.count || rawProgress?.[progressType] || 0);
-      };
-      const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
-      const getRarityLabel = (card) => card.defaultFrame === 'gold' ? 'Gold' : 'Blue';
-      const getCardLabel = (entry) => {
-        const number = `${String(getCardNumber(entry.card))}`;
-        return entry.quantity > 1 ? `${number} x${entry.quantity}` : number;
-      };
-      const groupByType = (entries) =>
-        entries.reduce((groups, entry) => {
-          const key = `${entry.card.stars || 0}-${entry.card.defaultFrame}`;
-          const label = ` ${entry.card.stars || 0}★·${getRarityLabel(entry.card)}`;
-
-          return {
-            ...groups,
-            [key]: {
-              label,
-              stars: entry.card.stars || 0,
-              rarityOrder: entry.card.defaultFrame === 'gold' ? 1 : 0,
-              entries: [...(groups[key]?.entries || []), entry],
-            },
-          };
-        }, {});
-      const renderGroupedEntries = (entries, emptyText) => {
-        if (entries.length === 0) return [`- ${emptyText}`];
-
-        return Object.values(groupByType(entries))
-          .sort((a, b) => a.stars - b.stars || a.rarityOrder - b.rarityOrder)
-          .map((group) => {
-            const cards = group.entries
-              .sort((a, b) => getCardNumber(a.card) - getCardNumber(b.card))
-              .map(getCardLabel)
-              .join(', ');
-
-            return `- ${cards} - ${group.label}`;
-          });
-      };
-
-      const targetCards = includeGoldInSummary
-        ? allCards
-        : allCards.filter((card) => card.defaultFrame !== 'gold');
-
-      const cardEntries = targetCards.map((card) => ({ card, count: getCardCount(card) }));
-      const duplicateEntries = cardEntries
-        .filter((entry) => entry.count > 1)
-        .map((entry) => ({ ...entry, quantity: entry.count - 1 }));
-      const missingEntries = cardEntries
-        .filter((entry) => entry.count === 0)
-        .map((entry) => ({ ...entry, quantity: 1 }));
-      const collectedUniqueTotal = allCards.reduce((sum, card) => {
-        const c = getCardCount(card);
-        return sum + (c > 0 ? 1 : 0);
-      }, 0);
-      const uniquePercentage = allCards.length > 0 ? Math.round((collectedUniqueTotal / allCards.length) * 100) : 0;
-
-      const summaryText = [
-        '**Tilapia Tools**',
-        'https://tilapia-collect.vercel.app/',
-        `Jugador: ${currentUser.name}`,
-        `UID: ${currentUser.uid}`,
-        '',
-        `Avance: ${collectedUniqueTotal}/${allCards.length} cartas (${uniquePercentage}%)`,
-        '**For Trade**',
-        ...renderGroupedEntries(duplicateEntries, 'Sin duplicadas por ahora.'),
-        '',
-        '**Looking For**',
-        ...renderGroupedEntries(missingEntries, 'Album completo.'),
-      ].join('\n');
-
-      try {
-        await navigator.clipboard.writeText(summaryText);
-        setSummaryStatus('Resumen detallado copiado al portapapeles');
-        window.setTimeout(() => setSummaryStatus(''), 2200);
-      } catch (error) {
-        console.warn('No se pudo copiar el resumen.', error);
-        setSummaryStatus('No se pudo copiar');
-        window.setTimeout(() => setSummaryStatus(''), 2200);
-      }
-
+    if (!currentUser) {
+      setShowAuthModal(true);
       return;
     }
 
-    const targetCards = includeGoldInSummary
-      ? allCards
-      : allCards.filter((card) => card.defaultFrame !== 'gold');
+    const getCardCount = (card) => {
+      const rawProgress = currentUserProgress[card.id];
+      const progressType = card.defaultFrame === 'gold' ? 'goldCount' : 'basicCount';
 
-    const duplicateEntries = targetCards
-      .filter((card) => {
-        const rawProgress = currentUserProgress[card.id];
-        const progressType = card.defaultFrame === 'gold' ? 'goldCount' : 'basicCount';
-        const count = typeof rawProgress === 'number'
-          ? rawProgress
-          : (rawProgress?.count || rawProgress?.[progressType] || 0);
-        return count > 1;
-      })
-      .map((card) => {
-        const rarity = card.defaultFrame === 'gold' ? 'GOLD' : '';
-        const starIcon = '⭐';
-        const cardNumber = (card.page - 1) * 9 + card.slot;
-        const raritySuffix = rarity ? ` ${rarity}` : '';
-        return `${cardNumber} (${card.stars} ${starIcon})${raritySuffix}`;
-      });
+      return typeof rawProgress === 'number'
+        ? rawProgress
+        : (rawProgress?.count || rawProgress?.[progressType] || 0);
+    };
+
+    const getCardNumber = (card) => (card.page - 1) * ALBUM_CONFIG.cardsPerPage + card.slot;
+    const getRarityLabel = (card) => (card.defaultFrame === 'gold' ? 'Gold' : 'Blue');
+    const getCardLabel = (entry) => {
+      const number = `${String(getCardNumber(entry.card))}`;
+      return entry.quantity > 1 ? `${number} x${entry.quantity}` : number;
+    };
+
+    const groupByType = (entries) =>
+      entries.reduce((groups, entry) => {
+        const key = `${entry.card.stars || 0}-${entry.card.defaultFrame}`;
+        const label = ` ${entry.card.stars || 0}★·${getRarityLabel(entry.card)}`;
+
+        return {
+          ...groups,
+          [key]: {
+            label,
+            stars: entry.card.stars || 0,
+            rarityOrder: entry.card.defaultFrame === 'gold' ? 1 : 0,
+            entries: [...(groups[key]?.entries || []), entry],
+          },
+        };
+      }, {});
+
+    const renderGroupedEntries = (entries, emptyText) => {
+      if (entries.length === 0) return [`- ${emptyText}`];
+
+      return Object.values(groupByType(entries))
+        .sort((a, b) => a.stars - b.stars || a.rarityOrder - b.rarityOrder)
+        .map((group) => {
+          const cards = group.entries
+            .sort((a, b) => getCardNumber(a.card) - getCardNumber(b.card))
+            .map(getCardLabel)
+            .join(', ');
+
+          return `- ${cards} - ${group.label}`;
+        });
+    };
+
+    // Filtrar cartas según estrellas y opción Gold seleccionadas
+    const targetCards = allCards.filter((card) => {
+      const matchStar = summaryStars.includes(card.stars || 1);
+      const matchGold = includeGoldInSummary ? true : card.defaultFrame !== 'gold';
+      return matchStar && matchGold;
+    });
+
+    const cardEntries = targetCards.map((card) => ({ card, count: getCardCount(card) }));
+    const duplicateEntries = cardEntries
+      .filter((entry) => entry.count > 1)
+      .map((entry) => ({ ...entry, quantity: entry.count - 1 }));
+    const missingEntries = cardEntries
+      .filter((entry) => entry.count === 0)
+      .map((entry) => ({ ...entry, quantity: 1 }));
+
+    const collectedUniqueTotal = allCards.reduce((sum, card) => {
+      const c = getCardCount(card);
+      return sum + (c > 0 ? 1 : 0);
+    }, 0);
+    const uniquePercentage = allCards.length > 0 ? Math.round((collectedUniqueTotal / allCards.length) * 100) : 0;
+
+    const isFiltered = summaryStars.length < 5 || !includeGoldInSummary;
+    const filterDesc = isFiltered
+      ? `Filtro: [${summaryStars.map((s) => s + '★').join(', ')}]${!includeGoldInSummary ? ' · Sin Gold' : ' · Con Gold'}`
+      : null;
 
     const summaryText = [
-      '**Tilapia Tools**',
+      '🎃 **Tilapia Tools - Álbum Otoño & Halloween** 🍂',
       'https://tilapia-collect.vercel.app/',
-      duplicateEntries.length > 0
-        ? `FT:\n${duplicateEntries.join('\n')}`
-        : 'No tienes cartas duplicadas.'
-    ].join('\n');
+      `Jugador: ${currentUser.name}`,
+      `UID: ${currentUser.uid}`,
+      `Avance: ${collectedUniqueTotal}/${allCards.length} cartas (${uniquePercentage}%)`,
+      filterDesc ? `📌 ${filterDesc}` : null,
+      '',
+      `**For Trade (Repetidas: ${duplicateEntries.length})**`,
+      ...renderGroupedEntries(duplicateEntries, 'Sin duplicadas con este filtro.'),
+      '',
+      `**Looking For (Faltantes: ${missingEntries.length})**`,
+      ...renderGroupedEntries(missingEntries, 'Álbum completo con este filtro.'),
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     try {
       await navigator.clipboard.writeText(summaryText);
-      setSummaryStatus('Resumen copiado al portapapeles');
-      window.setTimeout(() => setSummaryStatus(''), 2200);
+      setSummaryStatus(`📋 ¡Copiado con éxito! (${duplicateEntries.length} repetidas, ${missingEntries.length} faltantes)`);
+      window.setTimeout(() => setSummaryStatus(''), 3000);
     } catch (error) {
       console.warn('No se pudo copiar el resumen.', error);
-      setSummaryStatus('No se pudo copiar');
-      window.setTimeout(() => setSummaryStatus(''), 2200);
+      setSummaryStatus('❌ No se pudo copiar al portapapeles');
+      window.setTimeout(() => setSummaryStatus(''), 2500);
     }
   };
 
@@ -541,23 +558,23 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-green-50 text-green-900 flex flex-col font-sans max-w-xl mx-auto border-x border-green-200 shadow-2xl">
+    <div className="min-h-screen bg-[#140b0d] text-orange-100 flex flex-col font-sans max-w-xl mx-auto border-x border-orange-950/80 shadow-2xl relative">
+      <HalloweenAmbientBackground />
       
-      <header ref={headerRef} className="px-4 py-3 bg-green-100 border-b border-green-200 sticky top-0 z-30">
+      {/* HEADER OTOÑO & HALLOWEEN */}
+      <header ref={headerRef} className="px-4 py-3 bg-gradient-to-r from-[#2a110a] via-[#1f0e13] to-[#250d24] border-b border-orange-800/60 sticky top-0 z-30 shadow-md">
         <div className="flex justify-between items-center gap-2">
-          <h1 className="text-lg sm:text-xl font-black text-green-800 tracking-tight">
-            {ALBUM_CONFIG.title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xl select-none" role="img" aria-label="pumpkin">🎃</span>
+            <h1 className="text-lg sm:text-xl font-black bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-200 bg-clip-text text-transparent tracking-tight">
+              {ALBUM_CONFIG.title}
+            </h1>
+            <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-950/80 text-orange-300 border border-orange-700/60 hidden sm:inline-block">
+              🍂 Otoño & Halloween 🎃
+            </span>
+          </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setDarkMode((v) => !v)}
-              className="text-xs px-2.5 py-1.5 rounded-full font-bold transition-all shadow-sm bg-white text-green-700 border border-green-300 hover:bg-green-50"
-              title="Toggle dark mode"
-            >
-              {darkMode ? '🌙 Dark' : '🌞 Light'}
-            </button>
-
             <button
               onClick={() => {
                 if (currentUser) {
@@ -566,10 +583,10 @@ export default function App() {
                   setShowAuthModal(true);
                 }
               }}
-              className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all shadow-sm truncate max-w-[150px] ${
+              className={`text-xs px-3.5 py-1.5 rounded-full font-black transition-all shadow-md truncate max-w-[160px] ${
                 currentUser
-                  ? 'bg-green-600 text-white shadow-green-600/30 hover:bg-green-700'
-                  : 'bg-white text-green-700 border border-green-300 hover:bg-green-50'
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-orange-950/60 hover:from-orange-500 hover:to-amber-500 border border-orange-400/40'
+                  : 'bg-stone-900 text-orange-300 border border-orange-800/80 hover:bg-orange-950/80 hover:text-amber-200'
               }`}
             >
               {currentUser ? `🔓 ${currentUser.name}` : '🔒 Iniciar Sesión'}
@@ -579,60 +596,189 @@ export default function App() {
       </header>
 
       {summaryStatus && (
-        <div className="px-4 py-2 bg-emerald-100 text-emerald-700 text-xs font-semibold border-b border-emerald-200 text-center">
-          {summaryStatus}
+        <div className="px-4 py-2 bg-amber-950/90 text-amber-200 text-xs font-bold border-b border-amber-700/60 text-center shadow-inner">
+          ✨ {summaryStatus}
         </div>
       )}
 
-      <section className="px-4 py-4 bg-white border-b border-green-200 shadow-sm">
+      {/* RESUMEN DE PROGRESO */}
+      <section className="px-4 py-4 bg-stone-900/90 border-b border-orange-900/60 shadow-sm">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-700">
-              Resumen de tu colección
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">
+              🍂 Resumen de tu colección
             </p>
-            <h2 className="text-base font-black text-green-800">
-              {currentUser ? `Hola, ${currentUser.name}` : 'Inicia sesión para seguir tu progreso'}
+            <h2 className="text-base font-black text-amber-100">
+              {currentUser ? `Hola, ${currentUser.name} 🍁` : 'Inicia sesión para registrar tu progreso'}
             </h2>
           </div>
-          <div className="rounded-2xl bg-green-100 px-3 py-2 text-right min-w-[92px]">
-            <p className="text-[10px] font-bold uppercase text-green-700">Avance</p>
-            <p className="text-lg font-black text-green-800">{progressPercentage}%</p>
+          <div className="rounded-2xl bg-gradient-to-br from-orange-950 to-amber-950 border border-orange-800/70 px-3.5 py-2 text-right min-w-[96px] shadow-sm">
+            <p className="text-[10px] font-bold uppercase text-orange-300">Avance</p>
+            <p className="text-lg font-black bg-gradient-to-r from-orange-300 to-amber-200 bg-clip-text text-transparent">
+              {progressPercentage}%
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-green-700 mb-3">
-          <span>{completedCards} cartas marcadas</span>
-          <span>{allCards.length} cartas totales</span>
+        <div className="flex items-center justify-between text-sm text-amber-300/90 font-medium mb-3">
+          <span>🎃 {completedCards} cartas marcadas</span>
+          <span>{allCards.length} cartas totales 🍂</span>
         </div>
 
-        {/* Acciones de Resumen */}
-        <div className="pt-3 border-t border-green-100 flex flex-wrap items-center justify-between gap-2">
-          <label className="flex items-center gap-1.5 text-xs font-bold text-green-800 cursor-pointer select-none bg-green-50 px-2.5 py-1.5 rounded-full border border-green-200 shadow-sm hover:bg-green-100 transition-all">
-            <input
-              type="checkbox"
-              checked={includeGoldInSummary}
-              onChange={(e) => setIncludeGoldInSummary(e.target.checked)}
-              className="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 h-3.5 w-3.5 cursor-pointer"
-            />
-            <span>Incluir Gold</span>
-          </label>
+        {/* HERO CARD: GENERADOR DE RESUMEN (DESTACADO) */}
+        <div className="mt-3 rounded-2xl border-2 border-orange-500/80 bg-gradient-to-b from-[#2a1310] via-[#1e0d11] to-[#170a0d] p-3.5 shadow-xl shadow-orange-950/60 relative overflow-hidden">
+          {/* Fondo resplandeciente sutil */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          <button
-            onClick={handleGenerateSummary}
-            disabled={!currentUser}
-            className={`text-xs px-3.5 py-1.5 rounded-full font-bold transition-all shadow-sm flex items-center gap-1.5 ${
-              currentUser
-                ? 'bg-emerald-600 text-white shadow-emerald-600/30 hover:bg-emerald-500'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-            }`}
-          >
-            <span>📋</span>
-            <span>Generar Texto Resumen</span>
-          </button>
+          <div className="flex items-center justify-between gap-2 mb-2.5 relative z-10">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg select-none">📜</span>
+              <div>
+                <h3 className="text-sm font-black text-amber-100 flex items-center gap-1.5">
+                  <span>Generar Resumen para Trade</span>
+                  <span className="text-[9px] bg-orange-500 text-stone-950 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                    Más Usado
+                  </span>
+                </h3>
+                <p className="text-[11px] text-orange-300/80">
+                  Copia tu lista de repetidas y faltantes en 1 clic para compartir.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Presets Rápidos */}
+          <div className="mb-2.5 relative z-10">
+            <div className="text-[10px] font-black uppercase tracking-wider text-orange-400 mb-1.5 flex items-center justify-between">
+              <span>Filtros rápidos:</span>
+              <span className="text-[10px] text-amber-300/70 lowercase font-normal">o personaliza con los checks</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSummaryPreset('all')}
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
+                  summaryStars.length === 5
+                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
+                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
+                }`}
+              >
+                🌟 Todas (1-5★)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSummaryPreset('1-3')}
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
+                  summaryStars.length === 3 && summaryStars.includes(1) && summaryStars.includes(3)
+                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
+                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
+                }`}
+              >
+                🍂 1 a 3★
+              </button>
+              <button
+                type="button"
+                onClick={() => setSummaryPreset('3-4')}
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
+                  summaryStars.length === 2 && summaryStars.includes(3) && summaryStars.includes(4)
+                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
+                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
+                }`}
+              >
+                🎃 3 y 4★
+              </button>
+              <button
+                type="button"
+                onClick={() => setSummaryPreset('4-5')}
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
+                  summaryStars.length === 2 && summaryStars.includes(4) && summaryStars.includes(5)
+                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
+                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
+                }`}
+              >
+                👻 4 y 5★
+              </button>
+              <button
+                type="button"
+                onClick={() => setSummaryPreset('5')}
+                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
+                  summaryStars.length === 1 && summaryStars.includes(5)
+                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
+                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
+                }`}
+              >
+                👑 Solo 5★
+              </button>
+            </div>
+          </div>
+
+          {/* Selector de Estrellas Checkbox y Opción Gold */}
+          <div className="bg-stone-950/90 border border-orange-900/60 rounded-xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-2 relative z-10">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider text-orange-400 mr-0.5">
+                Estrellas:
+              </span>
+              {[1, 2, 3, 4, 5].map((s) => {
+                const isChecked = summaryStars.includes(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => toggleSummaryStar(s)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-black border transition select-none ${
+                      isChecked
+                        ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-sm'
+                        : 'bg-stone-900 text-stone-500 border-stone-800 hover:border-stone-700'
+                    }`}
+                  >
+                    <span>{isChecked ? '☑' : '☐'}</span>
+                    <span>{s}★</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <label className="flex items-center gap-1.5 text-xs font-bold text-amber-200 cursor-pointer select-none bg-stone-900 px-2.5 py-1 rounded-lg border border-orange-900/70 hover:bg-orange-950/60 transition-all">
+              <input
+                type="checkbox"
+                checked={includeGoldInSummary}
+                onChange={(e) => setIncludeGoldInSummary(e.target.checked)}
+                className="rounded text-amber-500 focus:ring-amber-500 accent-orange-500 h-3.5 w-3.5 cursor-pointer"
+              />
+              <span>⭐ Incluir Gold</span>
+            </label>
+          </div>
+
+          {/* Conteo dinámico y Botón Principal Gigante */}
+          <div className="flex flex-col gap-2 relative z-10">
+            {currentUser && (
+              <div className="flex items-center justify-between text-[11px] font-bold text-amber-300/90 px-1">
+                <span>
+                  ⚡ Repetidas en lista: <b className="text-amber-100">{summaryDupCount}</b>
+                </span>
+                <span>
+                  🔍 Faltantes en lista: <b className="text-amber-100">{summaryMissCount}</b>
+                </span>
+              </div>
+            )}
+
+            <button
+              onClick={handleGenerateSummary}
+              className={`w-full py-3 px-4 rounded-xl font-black text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
+                currentUser
+                  ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:via-amber-400 hover:to-yellow-400 text-stone-950 shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.01]'
+                  : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-500 hover:to-amber-500 shadow-orange-950/60'
+              }`}
+            >
+              <span className="text-lg">📜</span>
+              <span>{currentUser ? 'COPIAR RESUMEN AL PORTAPAPELES' : 'INICIAR SESIÓN PARA GENERAR RESUMEN'}</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      <section className="px-4 py-3 bg-green-50/60 border-b border-green-200">
+      {/* HERRAMIENTAS Y ADMIN */}
+      <section className="px-4 py-3 bg-[#170e10] border-b border-orange-900/50">
         <div className="space-y-3">
           <MissingCardFinder
             selectedUser={currentUser?.uid}
@@ -641,22 +787,25 @@ export default function App() {
             users={users}
           />
 
-          <section className="px-4 py-4 bg-green-50/50">
-            <div className="max-w-md mx-auto bg-white border border-green-200 rounded-lg p-3 shadow-sm">
+          {/* LLENADO RÁPIDO */}
+          <section className="p-3 bg-stone-900/90 border border-orange-900/60 rounded-2xl shadow-sm">
+            <div className="max-w-md mx-auto">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-black text-green-800">Llenado rápido</h2>
-                  <p className="text-[11px] text-green-600">
-                    Marca todas las cartas de una rareza o número de estrellas de una vez. Recuerda guardar después.
+                  <h2 className="text-sm font-black text-amber-100 flex items-center gap-1.5">
+                    <span>⚡</span> Llenado rápido
+                  </h2>
+                  <p className="text-[11px] text-orange-300/80">
+                    Marca todas las cartas de una rareza o estrellas de una vez. Recuerda guardar después.
                   </p>
                 </div>
-                <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-black text-green-700">
+                <span className="rounded-full bg-orange-950 border border-orange-800/60 px-2 py-1 text-[10px] font-black text-orange-300 shrink-0">
                   {allCards.length} cartas
                 </span>
               </div>
 
               {/* Por estrellas */}
-              <p className="text-[10px] font-black uppercase tracking-wide text-green-700 mb-2">Por estrellas</p>
+              <p className="text-[10px] font-black uppercase tracking-wide text-orange-400 mb-2">Por estrellas</p>
               <div className="grid grid-cols-5 gap-1.5 mb-3">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <button
@@ -666,8 +815,8 @@ export default function App() {
                     onClick={() => handleQuickFill({ stars: s, count: 1 })}
                     className={`rounded-xl py-2 text-[11px] font-black transition ${
                       currentUser
-                        ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'bg-amber-950/80 text-amber-200 border border-amber-800/60 hover:bg-amber-900/90 hover:text-white shadow-sm'
+                        : 'bg-stone-950 text-stone-600 cursor-not-allowed border border-stone-800/50'
                     }`}
                   >
                     {s}★
@@ -676,7 +825,7 @@ export default function App() {
               </div>
 
               {/* Por rareza */}
-              <p className="text-[10px] font-black uppercase tracking-wide text-green-700 mb-2">Por rareza</p>
+              <p className="text-[10px] font-black uppercase tracking-wide text-orange-400 mb-2">Por rareza</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
@@ -684,11 +833,11 @@ export default function App() {
                   onClick={() => handleQuickFill({ frame: 'basic', count: 1 })}
                   className={`rounded-xl py-2 text-[11px] font-black transition ${
                     currentUser
-                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? 'bg-sky-950/80 text-sky-200 border border-sky-800/60 hover:bg-sky-900/90 hover:text-white shadow-sm'
+                      : 'bg-stone-950 text-stone-600 cursor-not-allowed border border-stone-800/50'
                   }`}
                 >
-                  Todas Azul
+                  🔵 Todas Azul
                 </button>
                 <button
                   type="button"
@@ -696,11 +845,11 @@ export default function App() {
                   onClick={() => handleQuickFill({ frame: 'gold', count: 1 })}
                   className={`rounded-xl py-2 text-[11px] font-black transition ${
                     currentUser
-                      ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? 'bg-amber-950/80 text-amber-200 border border-amber-700/60 hover:bg-amber-900/90 hover:text-white shadow-sm'
+                      : 'bg-stone-950 text-stone-600 cursor-not-allowed border border-stone-800/50'
                   }`}
                 >
-                  Todas Oro
+                  ⭐ Todas Oro
                 </button>
               </div>
 
@@ -711,19 +860,18 @@ export default function App() {
                 onClick={() => handleQuickFill({ count: 0 })}
                 className={`w-full rounded-xl py-2 text-[11px] font-black transition ${
                   currentUser
-                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-red-950/40 text-red-300 hover:bg-red-900/60 border border-red-900/60 shadow-sm'
+                    : 'bg-stone-950 text-stone-600 cursor-not-allowed border border-stone-800/50'
                 }`}
               >
-                Quitar todas las cartas
+                🗑️ Quitar todas las cartas
               </button>
 
               {bulkImportStatus && (
-                <p className="mt-2 text-center text-[11px] font-semibold text-green-700">{bulkImportStatus}</p>
+                <p className="mt-2 text-center text-[11px] font-bold text-amber-300">{bulkImportStatus}</p>
               )}
             </div>
           </section>
-
 
           <UserManager
             currentUser={currentUser}
@@ -731,6 +879,10 @@ export default function App() {
             onReloadUsers={handleReloadUsers}
             onUserUpdated={handleUserUpdated}
             onUserDeleted={handleUserDeleted}
+            onResetAllProgress={() => {
+              setAllProgress({});
+              localStorage.removeItem('team_album_progress');
+            }}
           />
 
           <AdminBoard
@@ -742,14 +894,17 @@ export default function App() {
       </section>
 
       {/* RENDERIZADO DE CARTAS EN BLOQUES DE SETS */}
-      <main className="flex-1 p-4 bg-green-50/50">
+      <main className="flex-1 p-4 bg-[#140b0d]">
         <div className="mb-4">{renderSetPagination()}</div>
 
         {activeSet && (
-          <div className={`mb-4 rounded-2xl border border-white/70 p-3 shadow-sm ${SET_BACKGROUND_CLASSES[safeActiveSetIndex % SET_BACKGROUND_CLASSES.length]}`}>
-            <h2 className="text-xl font-black text-green-800 mb-2 pb-2 border-b border-white/70 flex items-center justify-between gap-3">
-              <span>{`Set de ${activeSet.setName}`}</span>
-              <span className="text-[11px] font-bold text-green-700 shrink-0">
+          <div className={`mb-4 rounded-2xl border p-3 shadow-lg ${SET_BACKGROUND_CLASSES[safeActiveSetIndex % SET_BACKGROUND_CLASSES.length]}`}>
+            <h2 className="text-xl font-black text-amber-100 mb-2 pb-2 border-b border-white/10 flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2">
+                <span>🍂</span>
+                <span>{`Set de ${activeSet.setName}`}</span>
+              </span>
+              <span className="text-[11px] font-bold text-amber-300 bg-stone-950/60 px-2.5 py-0.5 rounded-full border border-amber-700/40 shrink-0">
                 {activeSetMatchingCards}/{activeSet.cards.length}
               </span>
             </h2>
@@ -787,11 +942,12 @@ export default function App() {
           onClose={() => setShowAuthModal(false)}
         />
       )}
+
       {/* Botón flotante Guardar */}
       {currentUser && (
         <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
           {saveStatus && (
-            <span className="rounded-xl bg-green-800 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+            <span className="rounded-xl bg-orange-950 border border-orange-600 px-3 py-1.5 text-xs font-black text-amber-200 shadow-xl">
               {saveStatus}
             </span>
           )}
@@ -800,12 +956,12 @@ export default function App() {
             onClick={handleSaveProgress}
             disabled={isSaving || !hasPendingChanges}
             title={hasPendingChanges ? 'Tienes cambios sin guardar' : 'Todo guardado'}
-            className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black shadow-xl transition-all duration-300 ${
+            className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black shadow-2xl transition-all duration-300 ${
               hasPendingChanges && !isSaving
-                ? 'bg-green-600 text-white hover:bg-green-500 shadow-green-600/50 animate-bounce'
+                ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-500 hover:to-amber-500 shadow-orange-600/50 animate-bounce border border-orange-400'
                 : isSaving
-                ? 'bg-green-400 text-white cursor-wait shadow-green-400/40'
-                : 'bg-white text-gray-400 border border-gray-200 shadow-gray-200/60 cursor-default'
+                ? 'bg-orange-800 text-amber-200 cursor-wait shadow-orange-800/40'
+                : 'bg-stone-900 text-stone-500 border border-stone-800 shadow-black/60 cursor-default'
             }`}
           >
             {isSaving ? '⏳' : hasPendingChanges ? '💾' : '✅'}

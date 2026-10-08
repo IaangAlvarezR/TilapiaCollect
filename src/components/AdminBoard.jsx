@@ -33,7 +33,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
   const [status, setStatus] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [isGlobalView, setIsGlobalView] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: 'prom', direction: 'desc' });
 
@@ -280,37 +280,37 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
 
   if (!currentUser) {
     return (
-      <section className="mb-4 rounded-2xl border border-green-200 bg-white p-3 shadow-sm">
+      <section className="mb-4 rounded-2xl border border-amber-900/60 bg-stone-900/95 p-3 shadow-lg shadow-black/40">
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="flex w-full items-center justify-between rounded-xl bg-green-100 hover:bg-green-200/80 px-3.5 py-2.5 text-left border border-green-200 transition"
+          className="flex w-full items-center justify-between rounded-xl bg-amber-950/60 hover:bg-amber-900/60 px-3.5 py-2.5 text-left border border-amber-700/60 transition"
         >
           <div className="flex items-center gap-2.5">
-            <span className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-black uppercase text-white">
+            <span className="rounded-full bg-amber-600 px-2.5 py-0.5 text-[10px] font-black uppercase text-stone-950">
               Cozy Farm
             </span>
             <div>
-              <h2 className="text-sm font-black text-green-900">🌾 Cozy Farm</h2>
-              <p className="text-[11px] text-green-700">Registro de progreso individual.</p>
+              <h2 className="text-sm font-black text-amber-100">🌾 Cozy Farm 🎃</h2>
+              <p className="text-[11px] text-amber-300/80">Registro de progreso individual.</p>
             </div>
           </div>
-          <span className="text-xl font-black text-green-800">{isOpen ? '−' : '+'}</span>
+          <span className="text-xl font-black text-amber-300">{isOpen ? '−' : '+'}</span>
         </button>
 
         {isOpen && (
-          <div className="mt-3 p-4 bg-green-50/70 rounded-xl border border-green-200 text-center">
-            <p className="text-sm font-bold text-green-900 mb-1">
+          <div className="mt-3 p-4 bg-stone-950/80 rounded-xl border border-amber-900/60 text-center">
+            <p className="text-sm font-bold text-amber-200 mb-1">
               🔒 Inicia sesión para registrar tu progreso de Cozy Farm
             </p>
-            <p className="text-xs text-green-700 mb-3.5">
+            <p className="text-xs text-orange-300/70 mb-3.5">
               Podrás llevar el control de tus estadísticas de animales (🐸, 🐼, 💧, 🦈, 🦉, 🦇) de forma individual.
             </p>
             {onOpenAuth && (
               <button
                 type="button"
                 onClick={onOpenAuth}
-                className="bg-green-600 hover:bg-green-500 text-white font-black py-2 px-4 rounded-xl shadow-sm transition text-xs"
+                className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black py-2 px-4 rounded-xl shadow-md transition text-xs"
               >
                 Iniciar Sesión
               </button>
@@ -322,35 +322,35 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
   }
 
   return (
-    <section className="mb-4 rounded-2xl border border-green-200 bg-white p-3 shadow-sm">
+    <section className="mb-4 rounded-2xl border border-amber-900/60 bg-stone-900/95 p-3 shadow-lg shadow-black/40">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-xl bg-green-100 hover:bg-green-200/80 px-3.5 py-2.5 text-left border border-green-200 transition"
+        className="flex w-full items-center justify-between rounded-xl bg-amber-950/60 hover:bg-amber-900/60 px-3.5 py-2.5 text-left border border-amber-700/60 transition"
       >
         <div className="flex items-center gap-2.5">
-          <span className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-black uppercase text-white">
+          <span className="rounded-full bg-amber-600 px-2.5 py-0.5 text-[10px] font-black uppercase text-stone-950">
             Cozy Farm
           </span>
           <div>
-            <h2 className="text-sm font-black text-green-900">🌾 Cozy Farm</h2>
-            <p className="text-[11px] text-green-700">
+            <h2 className="text-sm font-black text-amber-100">🌾 Cozy Farm 🎃</h2>
+            <p className="text-[11px] text-amber-300/80">
               {isGlobalView
                 ? 'Vista Global de Jugadores (Promedio más alto por UID)'
                 : 'Registro de progreso individual'}
             </p>
           </div>
         </div>
-        <span className="text-xl font-black text-green-800">{isOpen ? '−' : '+'}</span>
+        <span className="text-xl font-black text-amber-300">{isOpen ? '−' : '+'}</span>
       </button>
 
       {isOpen && (
         <div className="mt-3 space-y-3">
           {/* Barra superior de controles y toggle de Admin */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-green-100/70 p-2 rounded-xl border border-green-200">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-amber-950/40 p-2 rounded-xl border border-amber-900/60">
             <div className="flex items-center gap-1.5 flex-wrap">
               {isGlobalView && (
-                <span className="text-xs font-bold bg-white px-2 py-1 rounded-lg text-green-900 border border-green-200 shadow-sm">
+                <span className="text-xs font-bold bg-stone-950 px-2.5 py-1 rounded-lg text-amber-200 border border-amber-800/80 shadow-sm">
                   🌐 {sortedEntries.length} jugadores
                 </span>
               )}
@@ -358,7 +358,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                 type="button"
                 onClick={fetchEntries}
                 disabled={isLoading}
-                className="rounded-lg bg-white hover:bg-green-50 px-2 py-1 text-[11px] font-bold text-green-800 border border-green-200 transition flex items-center gap-1"
+                className="rounded-lg bg-stone-900 hover:bg-amber-950/80 px-2.5 py-1 text-[11px] font-bold text-amber-200 border border-amber-800/80 transition flex items-center gap-1"
                 title="Recargar registros"
               >
                 <span>{isLoading ? '⏳' : '🔄'}</span>
@@ -369,7 +369,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                 <button
                   type="button"
                   onClick={copyAllUids}
-                  className="rounded-lg bg-white hover:bg-green-50 px-2 py-1 text-[11px] font-bold text-green-800 border border-green-200 transition flex items-center gap-1 shadow-sm"
+                  className="rounded-lg bg-stone-900 hover:bg-amber-950/80 px-2.5 py-1 text-[11px] font-bold text-amber-200 border border-amber-800/80 transition flex items-center gap-1 shadow-sm"
                   title="Copiar todos los UIDs de la tabla"
                 >
                   <span>📋</span>
@@ -388,8 +388,8 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                 }}
                 className={`text-xs px-3 py-1.5 rounded-lg font-black transition border shadow-sm flex items-center gap-1.5 ${
                   isGlobalView
-                    ? 'bg-green-600 text-white border-green-700 hover:bg-green-500'
-                    : 'bg-white text-green-800 border-green-300 hover:bg-green-50'
+                    ? 'bg-amber-600 text-stone-950 border-amber-500 hover:bg-amber-500'
+                    : 'bg-stone-900 text-amber-200 border-amber-800 hover:bg-amber-950/80'
                 }`}
                 title={isGlobalView ? 'Volver a mi listado personal' : 'Ver listado global de todos los jugadores'}
               >
@@ -399,24 +399,24 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
           </div>
 
           {status && (
-            <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-800 text-center">
+            <div className="rounded-xl border border-amber-800/70 bg-amber-950/80 px-3 py-2 text-xs font-semibold text-amber-200 text-center">
               {status}
             </div>
           )}
 
           {/* Formulario de registro (visible en la lista personal) */}
           {!isGlobalView && (
-            <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-green-200 bg-green-50/70 p-3 shadow-sm">
+            <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-amber-900/60 bg-stone-950 p-3 shadow-inner">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[10px] font-black uppercase tracking-wide text-green-700">
+                  <label className="block text-[10px] font-black uppercase tracking-wide text-amber-300">
                     UID del Jugador
                   </label>
                   {currentUser?.uid && form.uid !== currentUser.uid && (
                     <button
                       type="button"
                       onClick={() => setForm((prev) => ({ ...prev, uid: currentUser.uid }))}
-                      className="text-[10px] font-bold text-green-700 hover:underline"
+                      className="text-[10px] font-bold text-orange-400 hover:underline"
                     >
                       Usar mi UID ({currentUser.uid})
                     </button>
@@ -425,7 +425,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                 <input
                   value={form.uid}
                   onChange={(event) => setForm((prev) => ({ ...prev, uid: event.target.value }))}
-                  className="w-full rounded-xl border border-green-200 bg-white px-3 py-2 text-xs font-semibold text-green-900 outline-none focus:border-green-500"
+                  className="w-full rounded-xl border border-amber-800 bg-stone-900 px-3 py-2 text-xs font-semibold text-amber-100 outline-none focus:border-amber-400 shadow-inner"
                   placeholder="Ej. 10589616"
                   required
                 />
@@ -433,14 +433,14 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[10px] font-black uppercase tracking-wide text-green-700">
+                  <label className="block text-[10px] font-black uppercase tracking-wide text-amber-300">
                     Estadísticas de Animales
                   </label>
-                  <span className="text-[10px] text-green-600 font-semibold">Toca para ingresar</span>
+                  <span className="text-[10px] text-amber-400/80 font-semibold">Toca para ingresar</span>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {STAT_CONFIG.map(({ key, emoji, name }) => (
-                    <div key={key} className="bg-white/80 rounded-lg p-2 border border-green-200/80 text-center flex flex-col items-center">
+                    <div key={key} className="bg-stone-900 rounded-lg p-2 border border-amber-900/70 text-center flex flex-col items-center">
                       <label className="mb-1.5 block text-lg leading-none cursor-default select-none" title={name}>
                         {emoji}
                       </label>
@@ -450,7 +450,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                         max="999"
                         value={form[key]}
                         onChange={(event) => setForm((prev) => ({ ...prev, [key]: event.target.value }))}
-                        className="w-full rounded-lg border border-green-300 bg-green-50/40 px-1 py-1.5 text-center text-xs font-black text-green-900 outline-none focus:border-green-500 focus:bg-white"
+                        className="w-full rounded-lg border border-amber-800 bg-stone-950 px-1 py-1.5 text-center text-xs font-black text-amber-200 outline-none focus:border-amber-400"
                       />
                     </div>
                   ))}
@@ -461,7 +461,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 rounded-xl bg-green-600 hover:bg-green-500 px-4 py-2.5 text-xs font-black text-white shadow-sm transition disabled:opacity-70"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 px-4 py-2.5 text-xs font-black text-white shadow-md transition disabled:opacity-70"
                 >
                   {isSaving ? 'Guardando...' : editingId ? 'Actualizar Registro' : 'Guardar Progreso'}
                 </button>
@@ -469,7 +469,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                    className="rounded-xl border border-stone-800 bg-stone-900 px-3 py-2.5 text-xs font-bold text-stone-300 hover:bg-stone-800"
                   >
                     Cancelar
                   </button>
@@ -479,8 +479,8 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
           )}
 
           {/* Leyenda de colores / escala de calidad */}
-          <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 bg-white rounded-xl border border-green-200 text-[10px] sm:text-[11px] font-bold shadow-sm">
-            <span className="text-green-800 font-black">Calidad:</span>
+          <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 bg-stone-950 rounded-xl border border-amber-900/60 text-[10px] sm:text-[11px] font-bold shadow-sm">
+            <span className="text-amber-200 font-black">Calidad:</span>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="cozy-purple">🟣 &gt;220 (Mejor)</span>
               <span className="cozy-blue">🔵 200-220</span>
@@ -491,12 +491,12 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
           </div>
 
           {/* Tabla de registros con scroll horizontal responsivo y tamaños compactos */}
-          <div className="w-full overflow-x-auto rounded-xl border border-green-200 shadow-sm bg-white">
-            <table className="w-full min-w-[360px] divide-y divide-green-200 text-left text-[11px] sm:text-xs">
-              <thead className="bg-green-50 text-green-800 select-none">
+          <div className="w-full overflow-x-auto rounded-xl border border-amber-900/60 shadow-sm bg-stone-950">
+            <table className="w-full min-w-[360px] divide-y divide-amber-900/60 text-left text-[11px] sm:text-xs">
+              <thead className="bg-amber-950/80 text-amber-200 select-none">
                 <tr>
                   <th
-                    className="px-1.5 sm:px-2.5 py-2 font-black cursor-pointer hover:bg-green-100 whitespace-nowrap"
+                    className="px-1.5 sm:px-2.5 py-2 font-black cursor-pointer hover:bg-amber-900/40 whitespace-nowrap"
                     onClick={() => requestSort('uid')}
                   >
                     UID {sortConfig.key === 'uid' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
@@ -504,7 +504,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                   {STAT_CONFIG.map(({ key, emoji, name }) => (
                     <th
                       key={key}
-                      className="px-0.5 sm:px-1.5 py-2 font-black text-center cursor-pointer hover:bg-green-100"
+                      className="px-0.5 sm:px-1.5 py-2 font-black text-center cursor-pointer hover:bg-amber-900/40"
                       onClick={() => requestSort(key)}
                       title={`Ordenar por ${name}`}
                     >
@@ -515,7 +515,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                     </th>
                   ))}
                   <th
-                    className="px-1 sm:px-2 py-2 font-black text-center cursor-pointer hover:bg-green-100 whitespace-nowrap"
+                    className="px-1 sm:px-2 py-2 font-black text-center cursor-pointer hover:bg-amber-900/40 whitespace-nowrap"
                     onClick={() => requestSort('prom')}
                   >
                     Prom. {sortConfig.key === 'prom' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
@@ -523,16 +523,16 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                   <th className="px-1.5 sm:px-2 py-2 font-black text-center whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-green-100">
+              <tbody className="divide-y divide-amber-950/60">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="9" className="px-3 py-6 text-center text-xs text-green-700">
+                    <td colSpan="9" className="px-3 py-6 text-center text-xs text-amber-400">
                       ⏳ Cargando registros...
                     </td>
                   </tr>
                 ) : sortedEntries.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-3 py-6 text-center text-xs text-green-700">
+                    <td colSpan="9" className="px-3 py-6 text-center text-xs text-amber-400/80">
                       {isGlobalView
                         ? 'No se encontraron registros de jugadores.'
                         : 'Aún no has registrado tus estadísticas. ¡Ingrésalas arriba!'}
@@ -551,20 +551,20 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                     return (
                       <tr
                         key={entry.id || entry.uid}
-                        className={`hover:bg-green-50/70 transition ${
+                        className={`hover:bg-amber-950/30 transition ${
                           isJustCopied
-                            ? 'bg-emerald-100/70'
+                            ? 'bg-amber-900/50'
                             : isOwnUid
-                            ? 'bg-green-50/60 font-medium'
+                            ? 'bg-amber-950/40 font-medium'
                             : ''
                         }`}
                       >
                         {/* Celda de UID con toque súper rápido para copiar */}
-                        <td className="px-1.5 sm:px-2.5 py-1.5 font-black text-green-900">
+                        <td className="px-1.5 sm:px-2.5 py-1.5 font-black text-amber-100">
                           <button
                             type="button"
                             onClick={() => copyUidFast(entry.uid)}
-                            className="flex items-center gap-1 group text-left cursor-pointer rounded px-1 py-0.5 hover:bg-green-200/70 transition active:scale-95"
+                            className="flex items-center gap-1 group text-left cursor-pointer rounded px-1 py-0.5 hover:bg-amber-900/60 transition active:scale-95"
                             title="Toca para copiar UID al instante"
                           >
                             <span className="truncate max-w-[68px] sm:max-w-[95px] text-[11px] sm:text-xs">
@@ -596,7 +596,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                               <button
                                 type="button"
                                 onClick={() => handleDelete(entry)}
-                                className="rounded bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px] font-black"
+                                className="rounded bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 px-1.5 py-0.5 text-[10px] font-black"
                                 title="Eliminar registro"
                               >
                                 🗑️
@@ -607,7 +607,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                               <button
                                 type="button"
                                 onClick={() => handleEdit(entry)}
-                                className="rounded bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border border-yellow-200 px-1.5 py-0.5 text-[10px] font-black"
+                                className="rounded bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-800 px-1.5 py-0.5 text-[10px] font-black"
                                 title="Editar registro"
                               >
                                 ✏️
@@ -615,7 +615,7 @@ export function AdminBoard({ currentUser, isGeneralMode, onOpenAuth }) {
                               <button
                                 type="button"
                                 onClick={() => handleDelete(entry)}
-                                className="rounded bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px] font-black"
+                                className="rounded bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 px-1.5 py-0.5 text-[10px] font-black"
                                 title="Eliminar registro"
                               >
                                 🗑️

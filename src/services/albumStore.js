@@ -19,7 +19,7 @@ const toProgressRow = (userId, cardId, count) => ({
 export async function loadGeneralCards() {
   const { data, error } = await supabase
     .from('general_cards')
-    .select('id,page,slot,name,stars,default_frame')
+    .select('id,page,slot,name,stars,default_frame,image_url')
     .order('page', { ascending: true })
     .order('slot', { ascending: true })
 
@@ -98,6 +98,21 @@ export async function saveAllProgress(userId, progressMap) {
   return data
 }
 
+
+// Reiniciar el progreso de todos los jugadores (para nuevo álbum)
+export async function resetAllPlayerProgress() {
+  const { error } = await supabase
+    .from('player_progress')
+    .delete()
+    .gt('id', 0)
+
+  if (error) {
+    console.error('[resetAllPlayerProgress] Error de Supabase:', error)
+    throw error
+  }
+
+  return true
+}
 
 // Usuarios
 export async function loadUsers() {
