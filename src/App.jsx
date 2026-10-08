@@ -458,7 +458,7 @@ export default function App() {
     const groupByType = (entries) =>
       entries.reduce((groups, entry) => {
         const key = `${entry.card.stars || 0}-${entry.card.defaultFrame}`;
-        const label = ` ${entry.card.stars || 0}★·${getRarityLabel(entry.card)}`;
+        const label = `${entry.card.stars || 0}★·${getRarityLabel(entry.card)}`;
 
         return {
           ...groups,
@@ -482,7 +482,7 @@ export default function App() {
             .map(getCardLabel)
             .join(', ');
 
-          return `- ${cards} - ${group.label}`;
+          return `- ${cards} -  ${group.label}`;
         });
     };
 
@@ -507,27 +507,19 @@ export default function App() {
     }, 0);
     const uniquePercentage = allCards.length > 0 ? Math.round((collectedUniqueTotal / allCards.length) * 100) : 0;
 
-    const isFiltered = summaryStars.length < 5 || !includeGoldInSummary;
-    const filterDesc = isFiltered
-      ? `Filtro: [${summaryStars.map((s) => s + '★').join(', ')}]${!includeGoldInSummary ? ' · Sin Gold' : ' · Con Gold'}`
-      : null;
-
-    const summaryText = [
+    const summaryLines = [
       '🎃 **Tilapia Tools - Álbum Otoño & Halloween** 🍂',
       'https://tilapia-collect.vercel.app/',
       `Jugador: ${currentUser.name}`,
       `UID: ${currentUser.uid}`,
-      `Avance: ${collectedUniqueTotal}/${allCards.length} cartas (${uniquePercentage}%)`,
-      filterDesc ? `📌 ${filterDesc}` : null,
-      '',
-      `**For Trade (Repetidas: ${duplicateEntries.length})**`,
-      ...renderGroupedEntries(duplicateEntries, 'Sin duplicadas con este filtro.'),
-      '',
-      `**Looking For (Faltantes: ${missingEntries.length})**`,
-      ...renderGroupedEntries(missingEntries, 'Álbum completo con este filtro.'),
-    ]
-      .filter(Boolean)
-      .join('\n');
+      `${collectedUniqueTotal}/${allCards.length} (${uniquePercentage}%)`,
+      '**For Trade **',
+      ...renderGroupedEntries(duplicateEntries, 'Ninguna'),
+      '**Looking For **',
+      ...renderGroupedEntries(missingEntries, 'Ninguna'),
+    ];
+
+    const summaryText = summaryLines.join('\n');
 
     try {
       await navigator.clipboard.writeText(summaryText);
@@ -649,99 +641,47 @@ export default function App() {
           <span>{allCards.length} cartas totales 🍂</span>
         </div>
 
-        {/* HERO CARD: GENERADOR DE RESUMEN (DESTACADO) */}
-        <div className="mt-3 rounded-2xl border-2 border-orange-500/80 bg-gradient-to-b from-[#2a1310] via-[#1e0d11] to-[#170a0d] p-3.5 shadow-xl shadow-orange-950/60 relative overflow-hidden">
-          {/* Fondo resplandeciente sutil */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+        {/* HERO CARD: GENERADOR DE RESUMEN */}
+        <div className="mt-3 rounded-2xl border border-orange-700/60 bg-stone-950/80 p-4 shadow-lg relative overflow-hidden">
 
-          <div className="flex items-center justify-between gap-2 mb-2.5 relative z-10">
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg select-none">📜</span>
-              <div>
-                <h3 className="text-sm font-black text-amber-100 flex items-center gap-1.5">
-                  <span>Generar Resumen para Trade</span>
-                  <span className="text-[9px] bg-orange-500 text-stone-950 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                    Más Usado
-                  </span>
-                </h3>
-                <p className="text-[11px] text-orange-300/80">
-                  Copia tu lista de repetidas y faltantes en 1 clic para compartir.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Presets Rápidos */}
-          <div className="mb-2.5 relative z-10">
-            <div className="text-[10px] font-black uppercase tracking-wider text-orange-400 mb-1.5 flex items-center justify-between">
-              <span>Filtros rápidos:</span>
-              <span className="text-[10px] text-amber-300/70 lowercase font-normal">o personaliza con los checks</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setSummaryPreset('all')}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
-                  summaryStars.length === 5
-                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
-                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
-                }`}
-              >
-                🌟 Todas (1-5★)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSummaryPreset('1-3')}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
-                  summaryStars.length === 3 && summaryStars.includes(1) && summaryStars.includes(3)
-                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
-                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
-                }`}
-              >
-                🍂 1 a 3★
-              </button>
-              <button
-                type="button"
-                onClick={() => setSummaryPreset('3-4')}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
-                  summaryStars.length === 2 && summaryStars.includes(3) && summaryStars.includes(4)
-                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
-                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
-                }`}
-              >
-                🎃 3 y 4★
-              </button>
-              <button
-                type="button"
-                onClick={() => setSummaryPreset('4-5')}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
-                  summaryStars.length === 2 && summaryStars.includes(4) && summaryStars.includes(5)
-                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
-                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
-                }`}
-              >
-                👻 4 y 5★
-              </button>
-              <button
-                type="button"
-                onClick={() => setSummaryPreset('5')}
-                className={`text-[11px] font-black px-2.5 py-1 rounded-lg border transition ${
-                  summaryStars.length === 1 && summaryStars.includes(5)
-                    ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
-                    : 'bg-stone-950/80 text-amber-200 border-orange-900/60 hover:bg-orange-950/80'
-                }`}
-              >
-                👑 Solo 5★
-              </button>
-            </div>
-          </div>
-
-          {/* Selector de Estrellas Checkbox y Opción Gold */}
-          <div className="bg-stone-950/90 border border-orange-900/60 rounded-xl p-2.5 mb-3 flex flex-wrap items-center justify-between gap-2 relative z-10">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-wider text-orange-400 mr-0.5">
-                Estrellas:
+          {/* Título */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📜</span>
+              <h3 className="text-sm font-black text-amber-100">Generar Resumen para Trade</h3>
+              <span className="text-[9px] bg-orange-600/90 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wide">
+                Popular
               </span>
+            </div>
+          </div>
+
+          {/* Presets rápidos — una sola fila */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {[
+              { label: '🌟 Todas', key: 'all', active: summaryStars.length === 5 },
+              { label: '🍂 1–3★', key: '1-3', active: summaryStars.length === 3 && summaryStars.includes(1) && summaryStars.includes(3) },
+              { label: '🎃 3–4★', key: '3-4', active: summaryStars.length === 2 && summaryStars.includes(3) && summaryStars.includes(4) },
+              { label: '👻 4–5★', key: '4-5', active: summaryStars.length === 2 && summaryStars.includes(4) && summaryStars.includes(5) },
+              { label: '👑 5★', key: '5', active: summaryStars.length === 1 && summaryStars.includes(5) },
+            ].map(({ label, key, active }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSummaryPreset(key)}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  active
+                    ? 'bg-orange-600 text-white border-orange-500 shadow-sm'
+                    : 'bg-stone-900 text-orange-300 border-stone-800 hover:border-orange-700 hover:text-amber-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Estrellas individuales + toggle Gold — todo en una fila */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((s) => {
                 const isChecked = summaryStars.includes(s);
                 return (
@@ -749,55 +689,50 @@ export default function App() {
                     key={s}
                     type="button"
                     onClick={() => toggleSummaryStar(s)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-black border transition select-none ${
+                    title={`${s}★`}
+                    className={`w-8 h-8 rounded-lg text-xs font-black border transition-all ${
                       isChecked
-                        ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-sm'
-                        : 'bg-stone-900 text-stone-500 border-stone-800 hover:border-stone-700'
+                        ? 'bg-amber-600/90 text-white border-amber-500'
+                        : 'bg-stone-900 text-stone-500 border-stone-800 hover:border-stone-600'
                     }`}
                   >
-                    <span>{isChecked ? '☑' : '☐'}</span>
-                    <span>{s}★</span>
+                    {s}★
                   </button>
                 );
               })}
             </div>
 
-            <label className="flex items-center gap-1.5 text-xs font-bold text-amber-200 cursor-pointer select-none bg-stone-900 px-2.5 py-1 rounded-lg border border-orange-900/70 hover:bg-orange-950/60 transition-all">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-amber-200 cursor-pointer select-none bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-800 hover:border-orange-800 transition-all">
               <input
                 type="checkbox"
                 checked={includeGoldInSummary}
                 onChange={(e) => setIncludeGoldInSummary(e.target.checked)}
-                className="rounded text-amber-500 focus:ring-amber-500 accent-orange-500 h-3.5 w-3.5 cursor-pointer"
+                className="rounded accent-amber-500 h-3.5 w-3.5 cursor-pointer"
               />
-              <span>⭐ Incluir Gold</span>
+              <span>⭐ Gold</span>
             </label>
           </div>
 
-          {/* Conteo dinámico y Botón Principal Gigante */}
-          <div className="flex flex-col gap-2 relative z-10">
-            {currentUser && (
-              <div className="flex items-center justify-between text-[11px] font-bold text-amber-300/90 px-1">
-                <span>
-                  ⚡ Repetidas en lista: <b className="text-amber-100">{summaryDupCount}</b>
-                </span>
-                <span>
-                  🔍 Faltantes en lista: <b className="text-amber-100">{summaryMissCount}</b>
-                </span>
-              </div>
-            )}
+          {/* Contadores + Botón */}
+          {currentUser && (
+            <div className="flex items-center gap-3 text-[11px] text-stone-400 mb-2.5 px-0.5">
+              <span>🔄 Trade: <b className="text-amber-300">{summaryDupCount}</b></span>
+              <span className="text-stone-700">·</span>
+              <span>🔍 Busco: <b className="text-amber-300">{summaryMissCount}</b></span>
+            </div>
+          )}
 
-            <button
-              onClick={handleGenerateSummary}
-              className={`w-full py-3 px-4 rounded-xl font-black text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
-                currentUser
-                  ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:via-amber-400 hover:to-yellow-400 text-stone-950 shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.01]'
-                  : 'bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-500 hover:to-amber-500 shadow-orange-950/60'
-              }`}
-            >
-              <span className="text-lg">📜</span>
-              <span>{currentUser ? 'COPIAR RESUMEN AL PORTAPAPELES' : 'INICIAR SESIÓN PARA GENERAR RESUMEN'}</span>
-            </button>
-          </div>
+          <button
+            onClick={handleGenerateSummary}
+            className={`w-full py-2.5 px-4 rounded-xl font-black text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+              currentUser
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-stone-950 hover:scale-[1.01]'
+                : 'bg-gradient-to-r from-orange-700 to-amber-700 text-white/80'
+            }`}
+          >
+            <span>📜</span>
+            <span>{currentUser ? 'Copiar resumen al portapapeles' : 'Inicia sesión para generar resumen'}</span>
+          </button>
         </div>
       </section>
 
