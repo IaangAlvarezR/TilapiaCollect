@@ -47,6 +47,7 @@ export function Card({
   userProgress,
   onToggleCard,
   isGeneralMode,
+  showProgressControls = true,
   onUpdateCardConfig,
   matchesFilter = true,
 }) {
@@ -143,10 +144,10 @@ export function Card({
         className={`w-full aspect-[3/4] rounded-xl flex flex-col justify-between p-2 transition-all duration-300 text-center select-none relative overflow-hidden ${
           hasCard
             ? isGold
-              ? 'border-4 border-amber-400 bg-gradient-to-b from-amber-950/90 via-stone-900 to-amber-950/90 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
-              : 'border-4 border-cyan-400 bg-gradient-to-b from-cyan-950/80 via-stone-900 to-blue-950/80 shadow-[0_0_14px_rgba(34,211,238,0.25)]'
+              ? 'border-4 border-blue-400 bg-gradient-to-b from-amber-950/90 via-stone-900 to-amber-950/90 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
+              : 'border-4 border-blue-400 bg-gradient-to-b from-blue-950/80 via-stone-900 to-blue-950/80 shadow-[0_0_14px_rgba(59,130,246,0.3)]'
             : 'border-2 border-dashed border-orange-950/80 bg-stone-950/70 opacity-60'
-        }`}
+        } ${hasCard ? '' : 'grayscale'}`}
       >
         {/* Imagen de fondo de la carta (si existe) */}
         {cardData.imageUrl && (
@@ -160,6 +161,17 @@ export function Card({
         {/* Degradado oscuro para legibilidad si hay imagen */}
         {cardData.imageUrl && (
           <div className="absolute inset-0 bg-gradient-to-b from-stone-950/75 via-transparent to-stone-950/90 pointer-events-none" />
+        )}
+
+        {count > 1 && (
+          <span
+            className="absolute top-2 right-2 z-20 flex items-center gap-0.5 rounded-full border border-violet-300/70 bg-violet-950/95 px-1.5 py-0.5 text-[9px] font-black text-violet-100 shadow-md"
+            title={`${count - 1} duplicada${count - 1 === 1 ? '' : 's'}`}
+            aria-label={`${count - 1} duplicada${count - 1 === 1 ? '' : 's'}`}
+          >
+            <span aria-hidden="true">🔁</span>
+            <span>+{count - 1}</span>
+          </span>
         )}
 
         {/* Overlay cuando se está arrastrando una foto */}
@@ -190,7 +202,7 @@ export function Card({
           <div className="flex-1 flex items-center justify-center">
             <h3 className={`text-sm sm:text-base font-black uppercase tracking-wider drop-shadow-md break-words w-full px-1 truncate ${
               hasCard 
-                ? (isGold ? 'text-amber-200' : 'text-cyan-200') 
+                ? (isGold ? 'text-amber-200' : 'text-blue-200')
                 : 'text-stone-400'
             }`}>
               {displayName}
@@ -290,35 +302,39 @@ export function Card({
         </div>
       )}
 
-      {/* Botones de incremento y decremento (+ / -) */}
-      <div className="flex items-center justify-between w-full mt-2 bg-stone-950 rounded-xl p-1 border border-orange-900/60">
-        <button
-          onClick={() => onToggleCard(cardData.id, progressType, 'sub')}
-          className="w-7 h-7 flex items-center justify-center bg-stone-900 text-orange-300 border border-orange-900/60 rounded-lg text-sm font-black active:scale-90 transition-all hover:bg-orange-950 hover:text-amber-200"
-          title="Restar 1"
-        >
-          -
-        </button>
-        
+      <div className={`flex items-center w-full mt-2 bg-stone-950 rounded-xl p-1 border border-orange-900/60 ${showProgressControls ? 'justify-between' : 'justify-center'}`}>
+        {showProgressControls && (
+          <button
+            onClick={() => onToggleCard(cardData.id, progressType, 'sub')}
+            className="w-7 h-7 flex items-center justify-center bg-stone-900 text-orange-300 border border-orange-900/60 rounded-lg text-sm font-black active:scale-90 transition-all hover:bg-orange-950 hover:text-amber-200"
+            title="Restar 1"
+          >
+            -
+          </button>
+
+        )}
+
         <span className={`text-xs font-black ${
-          hasCard 
-            ? (isGold ? 'text-amber-400' : 'text-cyan-400') 
-            : 'text-stone-500'
-        }`}>
+            hasCard
+              ? (isGold ? 'text-amber-400' : 'text-blue-400')
+              : 'text-stone-500'
+          }`}>
           {count}
         </span>
 
-        <button
-          onClick={() => onToggleCard(cardData.id, progressType, 'add')}
-          className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm font-black active:scale-90 transition-all shadow-md ${
-            isGold 
-              ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-stone-950 hover:from-amber-400 hover:to-yellow-400 shadow-amber-950/60' 
-              : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 shadow-cyan-950/60'
-          }`}
-          title="Sumar 1"
-        >
-          +
-        </button>
+        {showProgressControls && (
+          <button
+            onClick={() => onToggleCard(cardData.id, progressType, 'add')}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm font-black active:scale-90 transition-all shadow-md ${
+              isGold
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-stone-950 hover:from-amber-400 hover:to-yellow-400 shadow-amber-950/60'
+                : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 shadow-cyan-950/60'
+            }`}
+            title="Sumar 1"
+          >
+            +
+          </button>
+        )}
       </div>
     </div>
   );

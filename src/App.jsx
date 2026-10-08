@@ -64,6 +64,8 @@ export default function App() {
   const [summaryStatus, setSummaryStatus] = useState('');
   const [summaryStars, setSummaryStars] = useState([1, 2, 3, 4, 5]); // [1, 2, 3, 4, 5]
   const [includeGoldInSummary, setIncludeGoldInSummary] = useState(true);
+  const [summaryMode, setSummaryMode] = useState('both'); // 'both' | 'trade'
+  const [adminOptionsEnabled, setAdminOptionsEnabled] = useState(false);
   const [bulkImportStatus, setBulkImportStatus] = useState('');
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -216,9 +218,10 @@ export default function App() {
       currentUser.uid?.toString().trim() === '10589616'
     )
   );
+  const showAdminOptions = isVaiuOrAdmin && adminOptionsEnabled;
 
   const handleUpdateCardConfig = (cardId, field, value) => {
-    if (!isVaiuOrAdmin) return;
+    if (!showAdminOptions) return;
 
     let cardToSave = null;
 
@@ -507,23 +510,30 @@ export default function App() {
     }, 0);
     const uniquePercentage = allCards.length > 0 ? Math.round((collectedUniqueTotal / allCards.length) * 100) : 0;
 
+    const tradeLines = [
+      '**For Trade**',
+      ...renderGroupedEntries(duplicateEntries, 'Ninguna'),
+    ];
     const summaryLines = [
       '🎃 **Tilapia Tools - Álbum Otoño & Halloween** 🍂',
       'https://tilapia-collect.vercel.app/',
       `Jugador: ${currentUser.name}`,
       `UID: ${currentUser.uid}`,
       `${collectedUniqueTotal}/${allCards.length} (${uniquePercentage}%)`,
-      '**For Trade **',
-      ...renderGroupedEntries(duplicateEntries, 'Ninguna'),
-      '**Looking For **',
-      ...renderGroupedEntries(missingEntries, 'Ninguna'),
+      ...tradeLines,
+      ...(summaryMode === 'both' ? [
+          '**Looking For**',
+          ...renderGroupedEntries(missingEntries, 'Ninguna'),
+        ] : []),
     ];
 
     const summaryText = summaryLines.join('\n');
 
     try {
       await navigator.clipboard.writeText(summaryText);
-      setSummaryStatus(`📋 ¡Copiado con éxito! (${duplicateEntries.length} repetidas, ${missingEntries.length} faltantes)`);
+      setSummaryStatus(summaryMode === 'trade'
+        ? `📋 ¡For Trade copiado! (${duplicateEntries.length} grupos)`
+        : `📋 ¡Copiado con éxito! (${duplicateEntries.length} repetidas, ${missingEntries.length} faltantes)`);
       window.setTimeout(() => setSummaryStatus(''), 3000);
     } catch (error) {
       console.warn('No se pudo copiar el resumen.', error);
@@ -595,6 +605,7 @@ export default function App() {
               onClick={() => {
                 if (currentUser) {
                   setCurrentUser(null);
+                  setAdminOptionsEnabled(false);
                 } else {
                   setShowAuthModal(true);
                 }
@@ -713,6 +724,32 @@ export default function App() {
             </label>
           </div>
 
+          <div className="mb-3">
+            <p className="text-[10px] font-black uppercase tracking-wider text-orange-300 mb-1.5">
+              Contenido a copiar
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'both', label: 'Trade + Busco' },
+                { value: 'trade', label: 'Solo For Trade' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={summaryMode === value}
+                  onClick={() => setSummaryMode(value)}
+                  className={`rounded-lg border px-2 py-1.5 text-[11px] font-bold transition-all ${
+                    summaryMode === value
+                      ? 'border-orange-500 bg-orange-600 text-white'
+                      : 'border-stone-800 bg-stone-900 text-orange-300 hover:border-orange-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Contadores + Botón */}
           {currentUser && (
             <div className="flex items-center gap-3 text-[11px] text-stone-400 mb-2.5 px-0.5">
@@ -739,6 +776,28 @@ export default function App() {
       {/* HERRAMIENTAS Y ADMIN */}
       <section className="px-4 py-3 bg-[#170e10] border-b border-orange-900/50">
         <div className="space-y-3">
+          {isVaiuOrAdmin && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-purple-800/70 bg-purple-950/40 px-3 py-2.5">
+              <div>
+                <p className="text-xs font-black text-purple-200">🛠️ Opciones de administrador</p>
+                <p className="text-[10px] text-purple-300/80">Desactivadas por defecto para evitar cambios accidentales.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={adminOptionsEnabled}
+                onClick={() => setAdminOptionsEnabled((enabled) => !enabled)}
+                className={`shrink-0 rounded-lg border px-3 py-1.5 text-[11px] font-black transition ${
+                  adminOptionsEnabled
+                    ? 'border-emerald-500 bg-emerald-700 text-white'
+                    : 'border-stone-700 bg-stone-900 text-stone-300'
+                }`}
+              >
+                {adminOptionsEnabled ? 'Activadas' : 'Desactivadas'}
+              </button>
+            </div>
+          )}
+
           <MissingCardFinder
             selectedUser={currentUser?.uid}
             cards={allCards}
@@ -746,6 +805,8 @@ export default function App() {
             users={users}
           />
 
+          {(!isVaiuOrAdmin || showAdminOptions) && (
+            <>
           {/* LLENADO RÁPIDO */}
           <section className="p-3 bg-stone-900/90 border border-orange-900/60 rounded-2xl shadow-sm">
             <div className="max-w-md mx-auto">
@@ -849,6 +910,8 @@ export default function App() {
             isGeneralMode={isGeneralMode}
             onOpenAuth={() => setShowAuthModal(true)}
           />
+            </>
+          )}
         </div>
       </section>
 
@@ -867,6 +930,11 @@ export default function App() {
                 {activeSetMatchingCards}/{activeSet.cards.length}
               </span>
             </h2>
+            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-orange-200/90" aria-label="Leyenda de estado de cartas">
+              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded border border-stone-400 bg-stone-500 grayscale" />Sin tener</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded border-2 border-blue-400 bg-blue-900" />La tienes</span>
+              <span className="flex items-center gap-1"><span aria-hidden="true">🔁</span>Duplicada</span>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {activeSet.cards.map((card) => (
                 <Card
@@ -875,7 +943,8 @@ export default function App() {
                   userProgress={currentUserProgress}
                   matchesFilter={matchesFilter(card)}
                   onToggleCard={handleToggleCard}
-                  isGeneralMode={isGeneralMode}
+                  isGeneralMode={showAdminOptions}
+                  showProgressControls={!isVaiuOrAdmin || showAdminOptions}
                   onUpdateCardConfig={handleUpdateCardConfig}
                 />
               ))}
