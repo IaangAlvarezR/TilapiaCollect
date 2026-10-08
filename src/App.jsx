@@ -170,18 +170,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('album_general_config', JSON.stringify(generalConfig));
+    try {
+      // Excluir imágenes base64 de localStorage para no exceder la cuota de 5MB del navegador.
+      // Las imágenes se sincronizan y descargan directamente desde Supabase.
+      const sanitizedConfig = generalConfig.map((page) => ({
+        ...page,
+        cards: page.cards.map((card) => {
+          const isBase64 = typeof card.imageUrl === 'string' && card.imageUrl.startsWith('data:');
+          return {
+            ...card,
+            imageUrl: isBase64 ? null : card.imageUrl,
+          };
+        }),
+      }));
+      localStorage.setItem('album_general_config', JSON.stringify(sanitizedConfig));
+    } catch (e) {
+      console.warn('No se pudo guardar la configuración en localStorage:', e);
+    }
   }, [generalConfig]);
 
   useEffect(() => {
-    localStorage.setItem('team_album_progress', JSON.stringify(allProgress));
+    try {
+      localStorage.setItem('team_album_progress', JSON.stringify(allProgress));
+    } catch (e) {
+      console.warn('No se pudo guardar el progreso en localStorage:', e);
+    }
   }, [allProgress]);
 
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('album_current_user', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('album_current_user');
+    try {
+      if (currentUser) {
+        localStorage.setItem('album_current_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('album_current_user');
+      }
+    } catch (e) {
+      console.warn('No se pudo guardar el usuario en localStorage:', e);
     }
   }, [currentUser]);
 

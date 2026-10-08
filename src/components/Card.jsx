@@ -7,8 +7,8 @@ const processImageFile = (file, callback) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 450;
-      const MAX_HEIGHT = 600;
+      const MAX_WIDTH = 250;
+      const MAX_HEIGHT = 330;
       let width = img.width;
       let height = img.height;
 
@@ -31,9 +31,9 @@ const processImageFile = (file, callback) => {
 
       let dataUrl;
       try {
-        dataUrl = canvas.toDataURL('image/webp', 0.85);
+        dataUrl = canvas.toDataURL('image/webp', 0.80);
       } catch {
-        dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        dataUrl = canvas.toDataURL('image/jpeg', 0.80);
       }
       callback(dataUrl);
     };
